@@ -41,15 +41,15 @@ export class RoomsController {
     });
   }
 
-  @Post(':id/secret/:player_id')
+  @Post(':roomId/secret/:playerId')
   @HttpCode(HttpStatus.OK)
   async setSecret(
     @Param() params: SetSecretControllerParamsDto,
     @Body() setSecretDto: SetSecretControllerBodyDto,
   ) {
     return await this.roomsService.setSecret({
-      roomId: params.id,
-      playerId: params.player_id,
+      roomId: params.roomId,
+      playerId: params.playerId,
       secret: setSecretDto.secret,
     });
   }

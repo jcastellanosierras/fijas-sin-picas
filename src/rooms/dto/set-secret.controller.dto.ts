@@ -10,8 +10,8 @@ export class SetSecretControllerBodyDto {
 
 export class SetSecretControllerParamsDto {
   @IsUUID()
-  id: string;
+  roomId: string;
 
   @IsUUID()
-  player_id: string;
+  playerId: string;
 }
