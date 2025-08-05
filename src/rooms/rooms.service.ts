@@ -3,7 +3,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
-import { Room, RoomState } from './entities/room.entity';
+import { Room } from './entities/room.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { JoinRoomServiceDto } from './dto/join-room.service.dto';
 import { JoinRoomResponseDto } from './dto/join-room-response.dto';
@@ -30,18 +30,12 @@ export class RoomsService {
     this.validateRoomCodeUniqueness(createRoomDto.code);
 
     const id = crypto.randomUUID();
-    const room = new Room(
-      id,
-      createRoomDto.code,
-      createRoomDto.password,
-      RoomState.WAITING,
-      [
-        {
-          id: crypto.randomUUID(),
-          username: createRoomDto.username,
-        },
-      ],
-    );
+    const room = new Room(id, createRoomDto.code, createRoomDto.password);
+
+    room.players[0] = {
+      id: crypto.randomUUID(),
+      username: createRoomDto.username,
+    };
 
     this.rooms.push(room);
     return room;
@@ -66,17 +60,17 @@ export class RoomsService {
       throw new BadRequestException('Username already exists');
     }
 
-    room.players.push({
+    room.players[1] = {
       id: crypto.randomUUID(),
       username: joinRoomDto.username,
-    });
+    };
 
     return {
       playerId: crypto.randomUUID(),
       roomId: room.id,
       code: room.code,
       state: room.state,
-      players: room.players.filter((player) => player !== undefined),
+      players: room.players.filter((player) => player !== null),
     };
   }
 

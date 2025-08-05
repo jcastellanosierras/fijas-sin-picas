@@ -110,8 +110,9 @@ describe('RoomsService', () => {
     const room = await roomsService.create(createRoomDto);
     const roomFound = await roomsService.getRoomByCode(room.code);
     expect(roomFound).toBeDefined();
-    expect(roomFound.players).toHaveLength(1);
+    expect(roomFound.players).toHaveLength(2);
     expect(roomFound.players[0]?.username).toBe('John Doe');
+    expect(roomFound.players[1]).toBeNull();
   });
 
   // join room
