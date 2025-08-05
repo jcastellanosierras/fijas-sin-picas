@@ -1,13 +1,19 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Param,
   Post,
 } from '@nestjs/common';
 import { RoomsService } from './rooms.service';
-import { CreateRoomDto, JoinRoomControllerDto } from './dto';
+import {
+  CreateRoomDto,
+  JoinRoomControllerDto,
+  SetSecretControllerBodyDto,
+  SetSecretControllerParamsDto,
+} from './dto';
 
 @Controller('rooms')
 export class RoomsController {
@@ -16,6 +22,11 @@ export class RoomsController {
   @Post()
   async createRoom(@Body() createRoomDto: CreateRoomDto) {
     return await this.roomsService.create(createRoomDto);
+  }
+
+  @Get(':code')
+  async getRoomByCode(@Param('code') code: string) {
+    return await this.roomsService.getRoomByCode(code);
   }
 
   @Post(':code/join')
@@ -27,6 +38,19 @@ export class RoomsController {
     return await this.roomsService.joinRoom({
       ...joinRoomDto,
       code,
+    });
+  }
+
+  @Post(':id/secret/:player_id')
+  @HttpCode(HttpStatus.OK)
+  async setSecret(
+    @Param() params: SetSecretControllerParamsDto,
+    @Body() setSecretDto: SetSecretControllerBodyDto,
+  ) {
+    return await this.roomsService.setSecret({
+      roomId: params.id,
+      playerId: params.player_id,
+      secret: setSecretDto.secret,
     });
   }
 }

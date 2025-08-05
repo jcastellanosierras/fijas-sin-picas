@@ -5,7 +5,7 @@ export enum RoomState {
   FINISHED = 'finished',
 }
 
-interface Player {
+export interface Player {
   id: string;
   username: string;
   secret?: string;

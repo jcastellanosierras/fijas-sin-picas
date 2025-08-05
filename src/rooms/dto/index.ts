@@ -2,3 +2,5 @@ export * from './create-room.dto';
 export * from './join-room.controller.dto';
 export * from './join-room.service.dto';
 export * from './join-room-response.dto';
+export * from './set-secret.controller.dto';
+export * from './set-secret.service.dto';
