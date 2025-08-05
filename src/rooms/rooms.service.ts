@@ -66,7 +66,7 @@ export class RoomsService {
 
     this.validateSecretSetting(room, player);
     this.setPlayerSecret(player, secret);
-    this.checkAndUpdateGameState(room);
+    this.checkAndStartGame(room);
   }
 
   async getRooms(): Promise<Room[]> {
@@ -102,6 +102,7 @@ export class RoomsService {
     room.players[0] = {
       id: crypto.randomUUID(),
       username: createRoomDto.username,
+      guesses: [],
     };
 
     return room;
@@ -111,6 +112,7 @@ export class RoomsService {
     const newPlayer: Player = {
       id: crypto.randomUUID(),
       username,
+      guesses: [],
     };
 
     room.players[1] = newPlayer;
@@ -152,9 +154,12 @@ export class RoomsService {
     player.secret = secret;
   }
 
-  private checkAndUpdateGameState(room: Room): void {
+  private checkAndStartGame(room: Room): void {
     if (room.players.every((player) => player?.secret)) {
       room.state = RoomState.IN_PROGRESS;
+      const randomPlayerIndex = Math.round(Math.random()) as 0 | 1;
+      room.currentTurnPlayerId = room.players[randomPlayerIndex]?.id ?? null;
+      room.currentTurn = 1;
     }
   }
 

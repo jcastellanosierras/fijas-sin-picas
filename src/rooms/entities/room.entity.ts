@@ -9,6 +9,15 @@ export interface Player {
   id: string;
   username: string;
   secret?: string;
+  guesses: Guess[];
+}
+
+export interface Guess {
+  id: string;
+  playerId: Player['id'];
+  guess: string;
+  result?: number;
+  createdAt: Date;
 }
 
 export class Room {
@@ -17,7 +26,8 @@ export class Room {
   public readonly password: string;
   public state: RoomState = RoomState.WAITING;
   public players: [Player | null, Player | null] = [null, null];
-  public currentTurn: Player['id'] | null = null;
+  public currentTurn: number = 0;
+  public currentTurnPlayerId: Player['id'] | null = null;
   public winner?: Player['id'];
   public readonly createdAt: Date = new Date();
 
