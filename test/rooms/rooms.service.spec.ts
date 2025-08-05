@@ -268,4 +268,214 @@ describe('RoomsService', () => {
       expect(updatedRoom.state).toBe(RoomState.SETTING_SECRETS);
     });
   });
+
+  describe('Set secrets', () => {
+    it('should set secret for a player', async () => {
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      const joinRoomDto: JoinRoomServiceDto = {
+        code: room.code,
+        password: room.password,
+        username: 'Player2',
+      };
+      const joinResult = await roomsService.joinRoom(joinRoomDto);
+
+      const playerId = joinResult.playerId;
+      const secret = '1234';
+
+      await roomsService.setSecret({
+        roomId: room.id,
+        playerId,
+        secret,
+      });
+
+      const updatedRoom = await roomsService.getRoomByCode(room.code);
+      const player = updatedRoom.players.find((p) => p?.id === playerId);
+      expect(player?.secret).toBe(secret);
+    });
+
+    it('should change state to SECRETS_PENDING when a player joins', async () => {
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      const joinRoomDto: JoinRoomServiceDto = {
+        code: room.code,
+        password: room.password,
+        username: 'Player2',
+      };
+      await roomsService.joinRoom(joinRoomDto);
+
+      const updatedRoom = await roomsService.getRoomByCode(room.code);
+      expect(updatedRoom.state).toBe(RoomState.SETTING_SECRETS);
+    });
+
+    it('should change state to IN_PROGRESS when both players set their secrets', async () => {
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      const joinRoomDto: JoinRoomServiceDto = {
+        code: room.code,
+        password: room.password,
+        username: 'Player2',
+      };
+      const joinResult = await roomsService.joinRoom(joinRoomDto);
+
+      // Establecer secreto del primer jugador
+      await roomsService.setSecret({
+        roomId: room.id,
+        playerId: room.players[0]!.id,
+        secret: '1234',
+      });
+
+      // Establecer secreto del segundo jugador
+      await roomsService.setSecret({
+        roomId: room.id,
+        playerId: joinResult.playerId,
+        secret: '5678',
+      });
+
+      const updatedRoom = await roomsService.getRoomByCode(room.code);
+      expect(updatedRoom.state).toBe(RoomState.IN_PROGRESS);
+    });
+
+    it('should throw error when trying to set secret in non-existent room', async () => {
+      await expect(
+        roomsService.setSecret({
+          roomId: 'non-existent-room-id',
+          playerId: 'player-id',
+          secret: '1234',
+        }),
+      ).rejects.toThrow('Room with id non-existent-room-id not found');
+    });
+
+    it('should throw error when trying to set secret for non-existent player', async () => {
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      await expect(
+        roomsService.setSecret({
+          roomId: room.id,
+          playerId: 'non-existent-player-id',
+          secret: '1234',
+        }),
+      ).rejects.toThrow('Player with id non-existent-player-id not found');
+    });
+
+    it('should throw error when trying to set secret in room not in SETTING_SECRETS state', async () => {
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      await expect(
+        roomsService.setSecret({
+          roomId: room.id,
+          playerId: room.players[0]!.id,
+          secret: '1234',
+        }),
+      ).rejects.toThrow('Room is not in setting secrets state');
+    });
+
+    it('should not allow updating secret once it is already set', async () => {
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      const joinRoomDto: JoinRoomServiceDto = {
+        code: room.code,
+        password: room.password,
+        username: 'Player2',
+      };
+      const joinResult = await roomsService.joinRoom(joinRoomDto);
+
+      // Establecer secreto inicial
+      await roomsService.setSecret({
+        roomId: room.id,
+        playerId: joinResult.playerId,
+        secret: '1234',
+      });
+
+      // Intentar actualizar secreto (debería fallar)
+      await expect(
+        roomsService.setSecret({
+          roomId: room.id,
+          playerId: joinResult.playerId,
+          secret: '5678',
+        }),
+      ).rejects.toThrow('Secret is already set for this player');
+    });
+
+    it('should validate that secret has exactly 4 numeric digits', async () => {
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      const joinRoomDto: JoinRoomServiceDto = {
+        code: room.code,
+        password: room.password,
+        username: 'Player2',
+      };
+      const joinResult = await roomsService.joinRoom(joinRoomDto);
+
+      await expect(
+        roomsService.setSecret({
+          roomId: room.id,
+          playerId: joinResult.playerId,
+          secret: '123',
+        }),
+      ).rejects.toThrow('Secret must be exactly 4 numeric digits');
+
+      // Test secreto con más de 4 dígitos
+      await expect(
+        roomsService.setSecret({
+          roomId: room.id,
+          playerId: joinResult.playerId,
+          secret: '12345',
+        }),
+      ).rejects.toThrow('Secret must be exactly 4 numeric digits');
+
+      // Test secreto con caracteres no numéricos
+      await expect(
+        roomsService.setSecret({
+          roomId: room.id,
+          playerId: joinResult.playerId,
+          secret: '12a4',
+        }),
+      ).rejects.toThrow('Secret must be exactly 4 numeric digits');
+
+      // Test secreto válido (debería pasar)
+      await expect(
+        roomsService.setSecret({
+          roomId: room.id,
+          playerId: joinResult.playerId,
+          secret: '1234',
+        }),
+      ).resolves.toBeUndefined();
+    });
+  });
 });

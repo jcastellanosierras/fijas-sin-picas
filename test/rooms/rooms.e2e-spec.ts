@@ -143,7 +143,7 @@ describe('Rooms E2E Tests', () => {
 
   describe('Join room', () => {
     it('/rooms/:code/join (POST) should join a room and return 200', async () => {
-      const roomCode = '1234567';
+      const roomCode = '9999001';
       const roomPassword = '1234567';
       const createRoomDto: CreateRoomDto = {
         code: roomCode,
@@ -174,7 +174,7 @@ describe('Rooms E2E Tests', () => {
       expect(joinBody).toHaveProperty('code');
       expect(joinBody).toHaveProperty('state');
       expect(joinBody.code).toBe(roomCode);
-      expect(joinBody.state).toBe(RoomState.WAITING);
+      expect(joinBody.state).toBe(RoomState.SETTING_SECRETS);
       expect(joinBody.players).toHaveLength(2);
       expect(joinBody.players[0].username).toBe('John Doe');
       expect(joinBody.players[1].username).toBe('Jane Doe');
@@ -193,7 +193,7 @@ describe('Rooms E2E Tests', () => {
     });
 
     it('/rooms/:code/join (POST) should return 400 when password is incorrect', async () => {
-      const roomCode = '1234568';
+      const roomCode = '9999002';
       const roomPassword = '1234568';
       const createRoomDto: CreateRoomDto = {
         code: roomCode,
@@ -218,8 +218,8 @@ describe('Rooms E2E Tests', () => {
     });
 
     it('/rooms/:code/join (POST) should return 400 when room is full', async () => {
-      const roomCode = '1234569';
-      const roomPassword = '1234569';
+      const roomCode = '9999003';
+      const roomPassword = '9999003';
       const createRoomDto: CreateRoomDto = {
         code: roomCode,
         password: roomPassword,
@@ -255,8 +255,8 @@ describe('Rooms E2E Tests', () => {
     });
 
     it('/rooms/:code/join (POST) should return 400 when username already exists', async () => {
-      const roomCode = '1234570';
-      const roomPassword = '1234570';
+      const roomCode = '9999004';
+      const roomPassword = '9999004';
       const createRoomDto: CreateRoomDto = {
         code: roomCode,
         password: roomPassword,
@@ -489,6 +489,509 @@ describe('Rooms E2E Tests', () => {
       const joinBody2 = joinResponse2.body as JoinRoomResponse;
       expect(joinBody2.code).toBe(roomCode2);
       expect(joinBody2.players).toHaveLength(2);
+    });
+  });
+
+  describe('Set secrets', () => {
+    it('/rooms/:id/secret/:player_id (POST) should set secret and return 200', async () => {
+      const roomCode = 'AAAA001';
+      const roomPassword = 'AAAA001';
+      const createRoomDto: CreateRoomDto = {
+        code: roomCode,
+        password: roomPassword,
+        username: 'John Doe',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/rooms')
+        .send(createRoomDto)
+        .expect(201);
+
+      const body = response.body as RoomResponse;
+
+      const joinRoomDto: JoinRoomControllerDto = {
+        password: roomPassword,
+        username: 'Jane Doe',
+      };
+      const joinResponse = await request(app.getHttpServer())
+        .post(`/rooms/${body.code}/join`)
+        .send(joinRoomDto)
+        .expect(200);
+
+      const joinBody = joinResponse.body as JoinRoomResponse;
+
+      const setSecretDto = {
+        secret: '1234',
+      };
+
+      await request(app.getHttpServer())
+        .post(`/rooms/${body.id}/secret/${joinBody.playerId}`)
+        .send(setSecretDto)
+        .expect(200);
+    });
+
+    it('/rooms/:id/secret/:player_id (POST) should return 404 when room does not exist', async () => {
+      const setSecretDto = {
+        secret: '1234',
+      };
+
+      await request(app.getHttpServer())
+        .post('/rooms/non-existent-room-id/secret/non-existent-player-id')
+        .send(setSecretDto)
+        .expect(400);
+    });
+
+    it('/rooms/:id/secret/:player_id (POST) should return 404 when player does not exist', async () => {
+      const roomCode = 'BBBB002';
+      const roomPassword = 'BBBB002';
+      const createRoomDto: CreateRoomDto = {
+        code: roomCode,
+        password: roomPassword,
+        username: 'John Doe',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/rooms')
+        .send(createRoomDto)
+        .expect(201);
+
+      const body = response.body as RoomResponse;
+
+      const setSecretDto = {
+        secret: '1234',
+      };
+
+      await request(app.getHttpServer())
+        .post(`/rooms/${body.id}/secret/non-existent-player-id`)
+        .send(setSecretDto)
+        .expect(400);
+    });
+
+    it('/rooms/:id/secret/:player_id (POST) should return 400 when room is not in SETTING_SECRETS state', async () => {
+      const roomCode = 'CCCC003';
+      const roomPassword = 'CCCC003';
+      const createRoomDto: CreateRoomDto = {
+        code: roomCode,
+        password: roomPassword,
+        username: 'John Doe',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/rooms')
+        .send(createRoomDto)
+        .expect(201);
+
+      const body = response.body as RoomResponse;
+
+      const setSecretDto = {
+        secret: '1234',
+      };
+
+      await request(app.getHttpServer())
+        .post(`/rooms/${body.id}/secret/${body.players[0].id}`)
+        .send(setSecretDto)
+        .expect(400);
+    });
+
+    it('/rooms/:id/secret/:player_id (POST) should return 400 when secret is already set', async () => {
+      const roomCode = 'DDDD004';
+      const roomPassword = 'DDDD004';
+      const createRoomDto: CreateRoomDto = {
+        code: roomCode,
+        password: roomPassword,
+        username: 'John Doe',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/rooms')
+        .send(createRoomDto)
+        .expect(201);
+
+      const body = response.body as RoomResponse;
+
+      const joinRoomDto: JoinRoomControllerDto = {
+        password: roomPassword,
+        username: 'Jane Doe',
+      };
+      const joinResponse = await request(app.getHttpServer())
+        .post(`/rooms/${body.code}/join`)
+        .send(joinRoomDto)
+        .expect(200);
+
+      const joinBody = joinResponse.body as JoinRoomResponse;
+
+      const setSecretDto = {
+        secret: '1234',
+      };
+
+      // Set secret first time
+      await request(app.getHttpServer())
+        .post(`/rooms/${body.id}/secret/${joinBody.playerId}`)
+        .send(setSecretDto)
+        .expect(200);
+
+      // Try to set secret again (should fail)
+      await request(app.getHttpServer())
+        .post(`/rooms/${body.id}/secret/${joinBody.playerId}`)
+        .send(setSecretDto)
+        .expect(400);
+    });
+
+    it('/rooms/:id/secret/:player_id (POST) should validate secret format (length, numeric, special cases)', async () => {
+      const roomCode = 'EEEE005';
+      const roomPassword = 'EEEE005';
+      const createRoomDto: CreateRoomDto = {
+        code: roomCode,
+        password: roomPassword,
+        username: 'John Doe',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/rooms')
+        .send(createRoomDto)
+        .expect(201);
+
+      const body = response.body as RoomResponse;
+
+      const joinRoomDto: JoinRoomControllerDto = {
+        password: roomPassword,
+        username: 'Jane Doe',
+      };
+      const joinResponse = await request(app.getHttpServer())
+        .post(`/rooms/${body.code}/join`)
+        .send(joinRoomDto)
+        .expect(200);
+
+      const joinBody = joinResponse.body as JoinRoomResponse;
+
+      // Test secreto muy corto
+      await request(app.getHttpServer())
+        .post(`/rooms/${body.id}/secret/${joinBody.playerId}`)
+        .send({ secret: '123' })
+        .expect(400);
+
+      // Test secreto muy largo
+      await request(app.getHttpServer())
+        .post(`/rooms/${body.id}/secret/${joinBody.playerId}`)
+        .send({ secret: '12345' })
+        .expect(400);
+
+      // Test secreto con espacios
+      await request(app.getHttpServer())
+        .post(`/rooms/${body.id}/secret/${joinBody.playerId}`)
+        .send({ secret: '12 4' })
+        .expect(400);
+
+      // Test secreto con caracteres especiales
+      await request(app.getHttpServer())
+        .post(`/rooms/${body.id}/secret/${joinBody.playerId}`)
+        .send({ secret: '12@4' })
+        .expect(400);
+
+      // Test secreto con letras
+      await request(app.getHttpServer())
+        .post(`/rooms/${body.id}/secret/${joinBody.playerId}`)
+        .send({ secret: '12a4' })
+        .expect(400);
+
+      // Test secreto con ceros a la izquierda (debería pasar)
+      await request(app.getHttpServer())
+        .post(`/rooms/${body.id}/secret/${joinBody.playerId}`)
+        .send({ secret: '0001' })
+        .expect(200);
+    });
+
+    it('/rooms/:id/secret/:player_id (POST) should validate secret data types and required fields', async () => {
+      const roomCode = 'FFFF006';
+      const roomPassword = 'FFFF006';
+      const createRoomDto: CreateRoomDto = {
+        code: roomCode,
+        password: roomPassword,
+        username: 'John Doe',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/rooms')
+        .send(createRoomDto)
+        .expect(201);
+
+      const body = response.body as RoomResponse;
+
+      const joinRoomDto: JoinRoomControllerDto = {
+        password: roomPassword,
+        username: 'Jane Doe',
+      };
+      const joinResponse = await request(app.getHttpServer())
+        .post(`/rooms/${body.code}/join`)
+        .send(joinRoomDto)
+        .expect(200);
+
+      const joinBody = joinResponse.body as JoinRoomResponse;
+
+      // Test secreto faltante
+      await request(app.getHttpServer())
+        .post(`/rooms/${body.id}/secret/${joinBody.playerId}`)
+        .send({})
+        .expect(400);
+
+      // Test secreto como número (debería ser string)
+      await request(app.getHttpServer())
+        .post(`/rooms/${body.id}/secret/${joinBody.playerId}`)
+        .send({ secret: 1234 })
+        .expect(400);
+
+      // Test secreto como string vacío
+      await request(app.getHttpServer())
+        .post(`/rooms/${body.id}/secret/${joinBody.playerId}`)
+        .send({ secret: '' })
+        .expect(400);
+
+      // Test secreto como null
+      await request(app.getHttpServer())
+        .post(`/rooms/${body.id}/secret/${joinBody.playerId}`)
+        .send({ secret: null })
+        .expect(400);
+
+      // Test secreto como undefined
+      await request(app.getHttpServer())
+        .post(`/rooms/${body.id}/secret/${joinBody.playerId}`)
+        .send({ secret: undefined })
+        .expect(400);
+
+      // Test campos extra
+      await request(app.getHttpServer())
+        .post(`/rooms/${body.id}/secret/${joinBody.playerId}`)
+        .send({ secret: '1234', extraField: 'not allowed' })
+        .expect(400);
+    });
+
+    it('/rooms/:id/secret/:player_id (POST) should change room state to IN_PROGRESS when both players set secrets', async () => {
+      const roomCode = 'GGGG007';
+      const roomPassword = 'GGGG007';
+      const createRoomDto: CreateRoomDto = {
+        code: roomCode,
+        password: roomPassword,
+        username: 'John Doe',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/rooms')
+        .send(createRoomDto)
+        .expect(201);
+
+      const body = response.body as RoomResponse;
+
+      const joinRoomDto: JoinRoomControllerDto = {
+        password: roomPassword,
+        username: 'Jane Doe',
+      };
+      const joinResponse = await request(app.getHttpServer())
+        .post(`/rooms/${body.code}/join`)
+        .send(joinRoomDto)
+        .expect(200);
+
+      const joinBody = joinResponse.body as JoinRoomResponse;
+
+      // Set secret for first player
+      await request(app.getHttpServer())
+        .post(`/rooms/${body.id}/secret/${body.players[0].id}`)
+        .send({ secret: '1234' })
+        .expect(200);
+
+      // Set secret for second player
+      await request(app.getHttpServer())
+        .post(`/rooms/${body.id}/secret/${joinBody.playerId}`)
+        .send({ secret: '5678' })
+        .expect(200);
+
+      // Verify room state changed to IN_PROGRESS
+      const roomResponse = await request(app.getHttpServer())
+        .get(`/rooms/${body.code}`)
+        .expect(200);
+
+      expect((roomResponse.body as RoomResponse).state).toBe(
+        RoomState.IN_PROGRESS,
+      );
+    });
+
+    it('/rooms/:id/secret/:player_id (POST) should handle multiple rooms setting secrets correctly', async () => {
+      // Create first room
+      const roomCode1 = 'HHHH008';
+      const roomPassword1 = 'HHHH008';
+      const createRoomDto1: CreateRoomDto = {
+        code: roomCode1,
+        password: roomPassword1,
+        username: 'John Doe',
+      };
+
+      const response1 = await request(app.getHttpServer())
+        .post('/rooms')
+        .send(createRoomDto1)
+        .expect(201);
+
+      const body1 = response1.body as RoomResponse;
+
+      const joinRoomDto1: JoinRoomControllerDto = {
+        password: roomPassword1,
+        username: 'Jane Doe',
+      };
+      const joinResponse1 = await request(app.getHttpServer())
+        .post(`/rooms/${body1.code}/join`)
+        .send(joinRoomDto1)
+        .expect(200);
+
+      const joinBody1 = joinResponse1.body as JoinRoomResponse;
+
+      // Create second room
+      const roomCode2 = 'IIII009';
+      const roomPassword2 = 'IIII009';
+      const createRoomDto2: CreateRoomDto = {
+        code: roomCode2,
+        password: roomPassword2,
+        username: 'Alice Smith',
+      };
+
+      const response2 = await request(app.getHttpServer())
+        .post('/rooms')
+        .send(createRoomDto2)
+        .expect(201);
+
+      const body2 = response2.body as RoomResponse;
+
+      const joinRoomDto2: JoinRoomControllerDto = {
+        password: roomPassword2,
+        username: 'Bob Johnson',
+      };
+      const joinResponse2 = await request(app.getHttpServer())
+        .post(`/rooms/${body2.code}/join`)
+        .send(joinRoomDto2)
+        .expect(200);
+
+      const joinBody2 = joinResponse2.body as JoinRoomResponse;
+
+      // Set secrets in first room
+      await request(app.getHttpServer())
+        .post(`/rooms/${body1.id}/secret/${body1.players[0].id}`)
+        .send({ secret: '1234' })
+        .expect(200);
+
+      await request(app.getHttpServer())
+        .post(`/rooms/${body1.id}/secret/${joinBody1.playerId}`)
+        .send({ secret: '5678' })
+        .expect(200);
+
+      // Set secrets in second room
+      await request(app.getHttpServer())
+        .post(`/rooms/${body2.id}/secret/${body2.players[0].id}`)
+        .send({ secret: '9999' })
+        .expect(200);
+
+      await request(app.getHttpServer())
+        .post(`/rooms/${body2.id}/secret/${joinBody2.playerId}`)
+        .send({ secret: '0000' })
+        .expect(200);
+
+      // Verify both rooms are in IN_PROGRESS state
+      const roomResponse1 = await request(app.getHttpServer())
+        .get(`/rooms/${body1.code}`)
+        .expect(200);
+
+      const roomResponse2 = await request(app.getHttpServer())
+        .get(`/rooms/${body2.code}`)
+        .expect(200);
+
+      expect((roomResponse1.body as RoomResponse).state).toBe(
+        RoomState.IN_PROGRESS,
+      );
+      expect((roomResponse2.body as RoomResponse).state).toBe(
+        RoomState.IN_PROGRESS,
+      );
+    });
+
+    it('/rooms (POST) should return 400 when code is too long', async () => {
+      const createRoomDto: CreateRoomDto = {
+        code: 'A'.repeat(51), // Más de 50 caracteres
+        password: '1234',
+        username: 'John Doe',
+      };
+      await request(app.getHttpServer())
+        .post('/rooms')
+        .send(createRoomDto)
+        .expect(400);
+    });
+
+    it('/rooms (POST) should return 400 when password is too long', async () => {
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: 'A'.repeat(51), // Más de 50 caracteres
+        username: 'John Doe',
+      };
+      await request(app.getHttpServer())
+        .post('/rooms')
+        .send(createRoomDto)
+        .expect(400);
+    });
+
+    it('/rooms (POST) should return 400 when username is too long', async () => {
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'A'.repeat(51), // Más de 50 caracteres
+      };
+      await request(app.getHttpServer())
+        .post('/rooms')
+        .send(createRoomDto)
+        .expect(400);
+    });
+
+    it('/rooms/:code/join (POST) should return 400 when username is too long', async () => {
+      const roomCode = 'TEST002';
+      const roomPassword = 'TEST002';
+      const createRoomDto: CreateRoomDto = {
+        code: roomCode,
+        password: roomPassword,
+        username: 'John Doe',
+      };
+
+      await request(app.getHttpServer())
+        .post('/rooms')
+        .send(createRoomDto)
+        .expect(201);
+
+      const joinRoomDto = {
+        password: roomPassword,
+        username: 'A'.repeat(51), // Más de 50 caracteres
+      };
+
+      await request(app.getHttpServer())
+        .post(`/rooms/${roomCode}/join`)
+        .send(joinRoomDto)
+        .expect(400);
+    });
+
+    it('/rooms/:code/join (POST) should return 400 when password is too long', async () => {
+      const roomCode = 'TEST003';
+      const roomPassword = 'TEST003';
+      const createRoomDto: CreateRoomDto = {
+        code: roomCode,
+        password: roomPassword,
+        username: 'John Doe',
+      };
+
+      await request(app.getHttpServer())
+        .post('/rooms')
+        .send(createRoomDto)
+        .expect(201);
+
+      const joinRoomDto = {
+        password: 'A'.repeat(51), // Más de 50 caracteres
+        username: 'Jane Doe',
+      };
+
+      await request(app.getHttpServer())
+        .post(`/rooms/${roomCode}/join`)
+        .send(joinRoomDto)
+        .expect(400);
     });
   });
 });
