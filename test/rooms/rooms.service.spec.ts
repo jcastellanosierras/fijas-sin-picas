@@ -135,7 +135,7 @@ describe('RoomsService', () => {
       const roomJoined = await roomsService.joinRoom(joinRoomDto);
 
       expect(roomJoined).toBeDefined();
-      expect(roomJoined.state).toBe(RoomState.WAITING);
+      expect(roomJoined.state).toBe(RoomState.SETTING_SECRETS);
     });
 
     it('should not join a room with the wrong code', async () => {
@@ -223,7 +223,7 @@ describe('RoomsService', () => {
 
       const result = await roomsService.joinRoom(joinRoomDto);
       expect(result.players).toHaveLength(2);
-      expect(result.state).toBe(RoomState.WAITING);
+      expect(result.state).toBe(RoomState.SETTING_SECRETS);
     });
 
     it('should handle special characters in username', async () => {
@@ -242,7 +242,7 @@ describe('RoomsService', () => {
 
       const result = await roomsService.joinRoom(joinRoomDto);
       expect(result.players[1].username).toBe('Player@123!');
-      expect(result.state).toBe(RoomState.WAITING);
+      expect(result.state).toBe(RoomState.SETTING_SECRETS);
     });
 
     it('should maintain room data consistency after joining', async () => {
@@ -265,7 +265,7 @@ describe('RoomsService', () => {
       expect(updatedRoom.players).toHaveLength(2);
       expect(updatedRoom.code).toBe(room.code);
       expect(updatedRoom.password).toBe(room.password);
-      expect(updatedRoom.state).toBe(RoomState.WAITING);
+      expect(updatedRoom.state).toBe(RoomState.SETTING_SECRETS);
     });
   });
 });

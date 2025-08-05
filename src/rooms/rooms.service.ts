@@ -3,7 +3,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
-import { Room } from './entities/room.entity';
+import { Room, RoomState } from './entities/room.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { JoinRoomServiceDto } from './dto/join-room.service.dto';
 import { JoinRoomResponseDto } from './dto/join-room-response.dto';
@@ -64,6 +64,8 @@ export class RoomsService {
       id: crypto.randomUUID(),
       username: joinRoomDto.username,
     };
+
+    room.state = RoomState.SETTING_SECRETS;
 
     return {
       playerId: crypto.randomUUID(),
