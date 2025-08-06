@@ -1,4 +1,4 @@
-import { CreateRoomDto, RoomsModule, RoomState } from '@/rooms';
+import { CreateRoomDto, Room, RoomsModule, RoomState } from '@/rooms';
 import { JoinRoomControllerDto } from '@/rooms/dto/join-room.controller.dto';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -24,6 +24,22 @@ interface JoinRoomResponse {
     id: string;
     username: string;
   }[];
+}
+
+interface MakeGuessResponse {
+  id: string;
+  guess: string;
+  exactMatches: number;
+  nextTurnPlayer: {
+    id: string;
+    username: string;
+  };
+  currentTurn: number;
+  state: RoomState;
+  winner?: {
+    id: string;
+    username: string;
+  };
 }
 
 describe('Rooms E2E Tests', () => {
@@ -992,6 +1008,347 @@ describe('Rooms E2E Tests', () => {
         .post(`/rooms/${roomCode}/join`)
         .send(joinRoomDto)
         .expect(400);
+    });
+  });
+
+  describe('Make guess', () => {
+    let roomData: {
+      roomId: string;
+      code: string;
+      player1Id: string;
+      player2Id: string;
+    };
+
+    beforeEach(async () => {
+      // Setup a complete game ready for guessing
+      const roomCode = `GUESS${Math.random().toString().slice(2, 8)}`;
+      const roomPassword = roomCode;
+      const createRoomDto: CreateRoomDto = {
+        code: roomCode,
+        password: roomPassword,
+        username: 'Player1',
+      };
+
+      const createResponse = await request(app.getHttpServer())
+        .post('/rooms')
+        .send(createRoomDto)
+        .expect(201);
+
+      const roomBody = createResponse.body as RoomResponse;
+
+      const joinRoomDto: JoinRoomControllerDto = {
+        password: roomPassword,
+        username: 'Player2',
+      };
+
+      const joinResponse = await request(app.getHttpServer())
+        .post(`/rooms/${roomBody.code}/join`)
+        .send(joinRoomDto)
+        .expect(200);
+
+      const joinBody = joinResponse.body as JoinRoomResponse;
+
+      // Set secrets for both players
+      await request(app.getHttpServer())
+        .post(`/rooms/${roomBody.id}/secret/${roomBody.players[0].id}`)
+        .send({ secret: '1234' })
+        .expect(200);
+
+      await request(app.getHttpServer())
+        .post(`/rooms/${roomBody.id}/secret/${joinBody.playerId}`)
+        .send({ secret: '5678' })
+        .expect(200);
+
+      roomData = {
+        roomId: roomBody.id,
+        code: roomBody.code,
+        player1Id: roomBody.players[0].id,
+        player2Id: joinBody.playerId,
+      };
+    });
+
+    it('/rooms/:roomId/guess/:playerId (POST) should make a guess and return 200', async () => {
+      // Get the current room state to know who's turn it is
+      const roomResponse = await request(app.getHttpServer())
+        .get(`/rooms/${roomData.code}`)
+        .expect(200);
+
+      const roomState = roomResponse.body as Room;
+      const currentTurnPlayerId = roomState.currentTurnPlayerId;
+
+      const guessDto = {
+        guess: '1111',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post(`/rooms/${roomData.roomId}/guess/${currentTurnPlayerId}`)
+        .send(guessDto)
+        .expect(200);
+
+      const body = response.body as MakeGuessResponse;
+
+      expect(body).toHaveProperty('id');
+      expect(body.guess).toBe(guessDto.guess);
+      expect(typeof body.exactMatches).toBe('number');
+      expect(body.exactMatches).toBeGreaterThanOrEqual(0);
+      expect(body.exactMatches).toBeLessThanOrEqual(4);
+      expect(body).toHaveProperty('nextTurnPlayer');
+      expect(body.nextTurnPlayer).toHaveProperty('id');
+      expect(body.nextTurnPlayer).toHaveProperty('username');
+      expect(typeof body.currentTurn).toBe('number');
+      expect([RoomState.IN_PROGRESS, RoomState.FINISHED]).toContain(body.state);
+    });
+
+    it('/rooms/:roomId/guess/:playerId (POST) should return 404 when room does not exist', async () => {
+      const guessDto = {
+        guess: '1111',
+      };
+
+      await request(app.getHttpServer())
+        .post('/rooms/non-existent-room-id/guess/some-player-id')
+        .send(guessDto)
+        .expect(400);
+    });
+
+    it('/rooms/:roomId/guess/:playerId (POST) should return 400 when player does not exist', async () => {
+      const guessDto = {
+        guess: '1111',
+      };
+
+      await request(app.getHttpServer())
+        .post(`/rooms/${roomData.roomId}/guess/non-existent-player-id`)
+        .send(guessDto)
+        .expect(400);
+    });
+
+    it('/rooms/:roomId/guess/:playerId (POST) should return 400 when not players turn', async () => {
+      // Get the current room state to know who's turn it is
+      const roomResponse = await request(app.getHttpServer())
+        .get(`/rooms/${roomData.code}`)
+        .expect(200);
+
+      const roomState = roomResponse.body as Room;
+      const currentTurnPlayerId = roomState.currentTurnPlayerId;
+      const notCurrentTurnPlayerId =
+        currentTurnPlayerId === roomData.player1Id
+          ? roomData.player2Id
+          : roomData.player1Id;
+
+      const guessDto = {
+        guess: '1111',
+      };
+
+      await request(app.getHttpServer())
+        .post(`/rooms/${roomData.roomId}/guess/${notCurrentTurnPlayerId}`)
+        .send(guessDto)
+        .expect(400);
+    });
+
+    it('/rooms/:roomId/guess/:playerId (POST) should return 400 when guess format is invalid', async () => {
+      // Get the current room state to know who's turn it is
+      const roomResponse = await request(app.getHttpServer())
+        .get(`/rooms/${roomData.code}`)
+        .expect(200);
+
+      const roomState = roomResponse.body as Room;
+      const currentTurnPlayerId = roomState.currentTurnPlayerId;
+
+      // Test guess too short
+      await request(app.getHttpServer())
+        .post(`/rooms/${roomData.roomId}/guess/${currentTurnPlayerId}`)
+        .send({ guess: '123' })
+        .expect(400);
+
+      // Test guess too long
+      await request(app.getHttpServer())
+        .post(`/rooms/${roomData.roomId}/guess/${currentTurnPlayerId}`)
+        .send({ guess: '12345' })
+        .expect(400);
+
+      // Test guess with letters
+      await request(app.getHttpServer())
+        .post(`/rooms/${roomData.roomId}/guess/${currentTurnPlayerId}`)
+        .send({ guess: '12a4' })
+        .expect(400);
+
+      // Test guess with special characters
+      await request(app.getHttpServer())
+        .post(`/rooms/${roomData.roomId}/guess/${currentTurnPlayerId}`)
+        .send({ guess: '12@4' })
+        .expect(400);
+
+      // Test guess with spaces
+      await request(app.getHttpServer())
+        .post(`/rooms/${roomData.roomId}/guess/${currentTurnPlayerId}`)
+        .send({ guess: '12 4' })
+        .expect(400);
+    });
+
+    it('/rooms/:roomId/guess/:playerId (POST) should return 400 when guess is missing', async () => {
+      // Get the current room state to know who's turn it is
+      const roomResponse = await request(app.getHttpServer())
+        .get(`/rooms/${roomData.code}`)
+        .expect(200);
+
+      const roomState = roomResponse.body as Room;
+      const currentTurnPlayerId = roomState.currentTurnPlayerId;
+
+      await request(app.getHttpServer())
+        .post(`/rooms/${roomData.roomId}/guess/${currentTurnPlayerId}`)
+        .send({})
+        .expect(400);
+    });
+
+    it('/rooms/:roomId/guess/:playerId (POST) should return 400 when guess has wrong data type', async () => {
+      // Get the current room state to know who's turn it is
+      const roomResponse = await request(app.getHttpServer())
+        .get(`/rooms/${roomData.code}`)
+        .expect(200);
+
+      const roomState = roomResponse.body as Room;
+      const currentTurnPlayerId = roomState.currentTurnPlayerId;
+
+      // Test guess as number
+      await request(app.getHttpServer())
+        .post(`/rooms/${roomData.roomId}/guess/${currentTurnPlayerId}`)
+        .send({ guess: 1234 })
+        .expect(400);
+    });
+
+    it('/rooms/:roomId/guess/:playerId (POST) should return 400 when extra fields are provided', async () => {
+      // Get the current room state to know who's turn it is
+      const roomResponse = await request(app.getHttpServer())
+        .get(`/rooms/${roomData.code}`)
+        .expect(200);
+
+      const roomState = roomResponse.body as Room;
+      const currentTurnPlayerId = roomState.currentTurnPlayerId;
+
+      await request(app.getHttpServer())
+        .post(`/rooms/${roomData.roomId}/guess/${currentTurnPlayerId}`)
+        .send({ guess: '1234', extraField: 'not allowed' })
+        .expect(400);
+    });
+
+    it('/rooms/:roomId/guess/:playerId (POST) should finish game when guess is correct', async () => {
+      // Get the current room state to know who's turn it is
+      const roomResponse = await request(app.getHttpServer())
+        .get(`/rooms/${roomData.code}`)
+        .expect(200);
+
+      const roomState = roomResponse.body as Room;
+      const currentTurnPlayerId = roomState.currentTurnPlayerId;
+
+      // Guess the opponent's secret (we know it's either '1234' or '5678')
+      const correctGuess =
+        currentTurnPlayerId === roomData.player1Id ? '5678' : '1234';
+
+      const response = await request(app.getHttpServer())
+        .post(`/rooms/${roomData.roomId}/guess/${currentTurnPlayerId}`)
+        .send({ guess: correctGuess })
+        .expect(200);
+
+      const body = response.body as MakeGuessResponse;
+
+      expect(body.exactMatches).toBe(4);
+      expect(body.state).toBe(RoomState.FINISHED);
+      expect(body.winner).toBeDefined();
+      expect(body.winner!.id).toBe(currentTurnPlayerId);
+    });
+
+    it('/rooms/:roomId/guess/:playerId (POST) should continue game when guess is incorrect', async () => {
+      // Get the current room state to know who's turn it is
+      const roomResponse = await request(app.getHttpServer())
+        .get(`/rooms/${roomData.code}`)
+        .expect(200);
+
+      const roomState = roomResponse.body as Room;
+      const currentTurnPlayerId = roomState.currentTurnPlayerId;
+
+      const response = await request(app.getHttpServer())
+        .post(`/rooms/${roomData.roomId}/guess/${currentTurnPlayerId}`)
+        .send({ guess: '9999' }) // Wrong guess
+        .expect(200);
+
+      const body = response.body as MakeGuessResponse;
+
+      expect(body.exactMatches).toBeLessThan(4);
+      expect(body.state).toBe(RoomState.IN_PROGRESS);
+      expect(body.winner).toBeUndefined();
+      expect(body.nextTurnPlayer.id).not.toBe(currentTurnPlayerId);
+    });
+
+    it('/rooms/:roomId/guess/:playerId (POST) should calculate exact matches correctly', async () => {
+      // Get the current room state to know who's turn it is
+      const roomResponse = await request(app.getHttpServer())
+        .get(`/rooms/${roomData.code}`)
+        .expect(200);
+
+      const roomState = roomResponse.body as Room;
+      const currentTurnPlayerId = roomState.currentTurnPlayerId;
+
+      // We know one player has '1234' and other has '5678'
+      // If current player is player1 (secret: '1234'), opponent secret is '5678'
+      // If current player is player2 (secret: '5678'), opponent secret is '1234'
+      const opponentSecret =
+        currentTurnPlayerId === roomData.player1Id ? '5678' : '1234';
+
+      // Test partial match
+      let testGuess = '';
+      let expectedMatches = 0;
+
+      // Create a guess that has some exact matches with the opponent's secret
+      for (let i = 0; i < 4; i++) {
+        if (i < 2) {
+          testGuess += opponentSecret[i]; // First 2 digits correct
+          expectedMatches++;
+        } else {
+          testGuess += '0'; // Last 2 digits wrong
+        }
+      }
+
+      const response = await request(app.getHttpServer())
+        .post(`/rooms/${roomData.roomId}/guess/${currentTurnPlayerId}`)
+        .send({ guess: testGuess })
+        .expect(200);
+
+      const body = response.body as MakeGuessResponse;
+
+      expect(body.exactMatches).toBe(expectedMatches);
+      expect(body.state).toBe(RoomState.IN_PROGRESS);
+    });
+
+    it('/rooms/:roomId/guess/:playerId (POST) should increment turn correctly', async () => {
+      // Get the current room state
+      const roomResponse = await request(app.getHttpServer())
+        .get(`/rooms/${roomData.code}`)
+        .expect(200);
+
+      const roomState = roomResponse.body as Room;
+      const currentTurnPlayerId = roomState.currentTurnPlayerId;
+      const currentTurn = roomState.currentTurn;
+
+      // Make first guess
+      await request(app.getHttpServer())
+        .post(`/rooms/${roomData.roomId}/guess/${currentTurnPlayerId}`)
+        .send({ guess: '9999' })
+        .expect(200);
+
+      // Get next player and make their guess
+      const nextPlayerId =
+        currentTurnPlayerId === roomData.player1Id
+          ? roomData.player2Id
+          : roomData.player1Id;
+
+      const response = await request(app.getHttpServer())
+        .post(`/rooms/${roomData.roomId}/guess/${nextPlayerId}`)
+        .send({ guess: '0000' })
+        .expect(200);
+
+      const body = response.body as MakeGuessResponse;
+
+      // After both players have made a guess in the same turn, currentTurn should increment
+      expect(body.currentTurn).toBe(currentTurn + 1);
     });
   });
 });
