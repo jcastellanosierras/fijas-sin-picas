@@ -478,4 +478,565 @@ describe('RoomsService', () => {
       ).resolves.toBeUndefined();
     });
   });
+
+  describe('Make guess', () => {
+    it('should throw error if room does not exist', async () => {
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      const joinRoomDto: JoinRoomServiceDto = {
+        code: room.code,
+        password: room.password,
+        username: 'Player2',
+      };
+      await roomsService.joinRoom(joinRoomDto);
+
+      await expect(
+        roomsService.makeGuess({
+          roomId: 'non-existent-room-id',
+          playerId: 'non-existent-player-id',
+          guess: '123',
+        }),
+      ).rejects.toThrow('Room with id non-existent-room-id not found');
+    });
+
+    it('should throw error if player does not exist', async () => {
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      await expect(
+        roomsService.makeGuess({
+          roomId: room.id,
+          playerId: 'non-existent-player-id',
+          guess: '1234',
+        }),
+      ).rejects.toThrow('Player with id non-existent-player-id not found');
+    });
+
+    it('should throw error if room is not in progress', async () => {
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      await expect(
+        roomsService.makeGuess({
+          roomId: room.id,
+          playerId: room.players[0]!.id,
+          guess: '1234',
+        }),
+      ).rejects.toThrow('Room is not in progress');
+    });
+
+    it('should throw error if guess is not 4 numeric digits', async () => {
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      const joinRoomDto: JoinRoomServiceDto = {
+        code: room.code,
+        password: room.password,
+        username: 'Player2',
+      };
+      await roomsService.joinRoom(joinRoomDto);
+
+      await roomsService.setSecret({
+        roomId: room.id,
+        playerId: room.players[0]!.id,
+        secret: '1234',
+      });
+
+      await roomsService.setSecret({
+        roomId: room.id,
+        playerId: room.players[1]!.id,
+        secret: '5678',
+      });
+
+      await expect(
+        roomsService.makeGuess({
+          roomId: room.id,
+          playerId: room.players[0]!.id,
+          guess: '123',
+        }),
+      ).rejects.toThrow('Guess must be exactly 4 numeric digits');
+    });
+
+    it('should throw error if player is not the current turn player', async () => {
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      const joinRoomDto: JoinRoomServiceDto = {
+        code: room.code,
+        password: room.password,
+        username: 'Player2',
+      };
+      await roomsService.joinRoom(joinRoomDto);
+
+      await roomsService.setSecret({
+        roomId: room.id,
+        playerId: room.players[0]!.id,
+        secret: '1234',
+      });
+
+      await roomsService.setSecret({
+        roomId: room.id,
+        playerId: room.players[1]!.id,
+        secret: '5678',
+      });
+
+      const updatedRoom = await roomsService.getRoomByCode(room.code);
+      const turnPlayerId = updatedRoom.currentTurnPlayerId;
+      const playerId =
+        turnPlayerId === room.players[0]!.id
+          ? room.players[1]!.id
+          : room.players[0]!.id;
+
+      await expect(
+        roomsService.makeGuess({
+          roomId: room.id,
+          playerId: playerId,
+          guess: '1234',
+        }),
+      ).rejects.toThrow('Player is not the current turn player');
+    });
+
+    it('should return the result of the guess', async () => {
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      const joinRoomDto: JoinRoomServiceDto = {
+        code: room.code,
+        password: room.password,
+        username: 'Player2',
+      };
+      await roomsService.joinRoom(joinRoomDto);
+
+      await roomsService.setSecret({
+        roomId: room.id,
+        playerId: room.players[0]!.id,
+        secret: '1234',
+      });
+
+      await roomsService.setSecret({
+        roomId: room.id,
+        playerId: room.players[1]!.id,
+        secret: '5678',
+      });
+
+      const updatedRoom = await roomsService.getRoomByCode(room.code);
+      const turnPlayerId = updatedRoom.currentTurnPlayerId;
+
+      const guess = '1235';
+
+      const result = await roomsService.makeGuess({
+        roomId: room.id,
+        playerId: turnPlayerId!,
+        guess,
+      });
+
+      expect(result.id).toBeDefined();
+      expect(result.guess).toBe(guess);
+
+      expect(typeof result.exactMatches).toBe('number');
+      expect(result.exactMatches).toBeGreaterThanOrEqual(0);
+      expect(result.exactMatches).toBeLessThanOrEqual(4);
+
+      const otherPlayer = updatedRoom.players.find(
+        (p) => p!.id !== turnPlayerId,
+      )!;
+      expect(result.nextTurnPlayer).toBeDefined();
+      expect(result.nextTurnPlayer.id).toBe(otherPlayer.id);
+
+      expect(Number.isInteger(result.currentTurn)).toBe(true);
+
+      expect([RoomState.IN_PROGRESS, RoomState.FINISHED]).toContain(
+        result.state,
+      );
+
+      if (result.state === RoomState.FINISHED) {
+        expect(result.winner).toBeDefined();
+        expect(result.winner!.id).toBeDefined();
+      } else {
+        expect(result.winner).toBeUndefined();
+      }
+    });
+
+    it('should finish game when player guesses correctly', async () => {
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      const joinRoomDto: JoinRoomServiceDto = {
+        code: room.code,
+        password: room.password,
+        username: 'Player2',
+      };
+      await roomsService.joinRoom(joinRoomDto);
+
+      // Host establece secreto '1234'
+      const player1SetSecretData = {
+        roomId: room.id,
+        playerId: room.players[0]!.id,
+        secret: '1234',
+      };
+      await roomsService.setSecret(player1SetSecretData);
+
+      // Player2 establece secreto '5678'
+      const player2SetSecretData = {
+        roomId: room.id,
+        playerId: room.players[1]!.id,
+        secret: '5678',
+      };
+      await roomsService.setSecret(player2SetSecretData);
+
+      const updatedRoom = await roomsService.getRoomByCode(room.code);
+      const turnPlayerId = updatedRoom.currentTurnPlayerId;
+
+      let guess: string;
+      if (turnPlayerId !== room.players[0]!.id) {
+        guess = '1234';
+      } else {
+        guess = '5678';
+      }
+      const result = await roomsService.makeGuess({
+        roomId: room.id,
+        playerId: turnPlayerId!,
+        guess,
+      });
+
+      expect(result.state).toBe(RoomState.FINISHED);
+      expect(result.winner).toBeDefined();
+      expect(result.winner!.id).toBe(turnPlayerId);
+      expect(result.exactMatches).toBe(4);
+    });
+
+    it('should continue game when player guesses incorrectly', async () => {
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      const joinRoomDto: JoinRoomServiceDto = {
+        code: room.code,
+        password: room.password,
+        username: 'Player2',
+      };
+      await roomsService.joinRoom(joinRoomDto);
+
+      // Host establece secreto '1234'
+      const player1SetSecretData = {
+        roomId: room.id,
+        playerId: room.players[0]!.id,
+        secret: '1234',
+      };
+      await roomsService.setSecret(player1SetSecretData);
+
+      // Player2 establece secreto '5678'
+      const player2SetSecretData = {
+        roomId: room.id,
+        playerId: room.players[1]!.id,
+        secret: '5678',
+      };
+      await roomsService.setSecret(player2SetSecretData);
+
+      const updatedRoom = await roomsService.getRoomByCode(room.code);
+      const turnPlayerId = updatedRoom.currentTurnPlayerId;
+
+      let guess: string;
+      if (turnPlayerId !== room.players[0]!.id) {
+        guess = '9299';
+      } else {
+        guess = '9699';
+      }
+      // Player2 adivina su propio secreto incorrectamente
+      const result = await roomsService.makeGuess({
+        roomId: room.id,
+        playerId: turnPlayerId!,
+        guess,
+      });
+
+      const expectedNextTurnPlayerId =
+        turnPlayerId === room.players[0]!.id
+          ? room.players[1]!.id
+          : room.players[0]!.id;
+      expect(result.state).toBe(RoomState.IN_PROGRESS);
+      expect(result.winner).toBeUndefined();
+      expect(result.exactMatches).toBe(1);
+      expect(result.nextTurnPlayer).toBeDefined();
+      expect(result.nextTurnPlayer.id).toBe(expectedNextTurnPlayerId);
+    });
+
+    it('should handle partial matches correctly', async () => {
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      const joinRoomDto: JoinRoomServiceDto = {
+        code: room.code,
+        password: room.password,
+        username: 'Player2',
+      };
+      await roomsService.joinRoom(joinRoomDto);
+
+      // Host establece secreto '1234'
+      const player1SetSecretData = {
+        roomId: room.id,
+        playerId: room.players[0]!.id,
+        secret: '1234',
+      };
+      await roomsService.setSecret(player1SetSecretData);
+
+      // Player2 establece secreto '5678'
+      const player2SetSecretData = {
+        roomId: room.id,
+        playerId: room.players[1]!.id,
+        secret: '5678',
+      };
+      await roomsService.setSecret(player2SetSecretData);
+
+      const updatedRoom = await roomsService.getRoomByCode(room.code);
+      const turnPlayerId = updatedRoom.currentTurnPlayerId;
+
+      let guess: string;
+      if (turnPlayerId !== room.players[0]!.id) {
+        guess = '1239';
+      } else {
+        guess = '5679';
+      }
+      // Player2 adivina su propio secreto con 2 coincidencias exactas
+      const result = await roomsService.makeGuess({
+        roomId: room.id,
+        playerId: turnPlayerId!,
+        guess,
+      });
+
+      const expectedNextTurnPlayerId =
+        turnPlayerId === room.players[0]!.id
+          ? room.players[1]!.id
+          : room.players[0]!.id;
+      expect(result.state).toBe(RoomState.IN_PROGRESS);
+      expect(result.winner).toBeUndefined();
+      expect(result.exactMatches).toBe(3);
+      expect(result.nextTurnPlayer).toBeDefined();
+      expect(result.nextTurnPlayer.id).toBe(expectedNextTurnPlayerId);
+    });
+
+    it('should handle no matches correctly', async () => {
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      const joinRoomDto: JoinRoomServiceDto = {
+        code: room.code,
+        password: room.password,
+        username: 'Player2',
+      };
+      await roomsService.joinRoom(joinRoomDto);
+
+      // Host establece secreto '1234'
+      const player1SetSecretData = {
+        roomId: room.id,
+        playerId: room.players[0]!.id,
+        secret: '1234',
+      };
+      await roomsService.setSecret(player1SetSecretData);
+
+      // Player2 establece secreto '5678'
+      const player2SetSecretData = {
+        roomId: room.id,
+        playerId: room.players[1]!.id,
+        secret: '5678',
+      };
+      await roomsService.setSecret(player2SetSecretData);
+
+      const updatedRoom = await roomsService.getRoomByCode(room.code);
+      const turnPlayerId = updatedRoom.currentTurnPlayerId;
+
+      let guess: string;
+      if (turnPlayerId !== room.players[0]!.id) {
+        guess = '9999';
+      } else {
+        guess = '9999';
+      }
+      // Player2 adivina su propio secreto sin coincidencias
+      const expectedNextTurnPlayerId =
+        turnPlayerId === room.players[0]!.id
+          ? room.players[1]!.id
+          : room.players[0]!.id;
+      // Player2 adivina su propio secreto sin coincidencias
+      const result = await roomsService.makeGuess({
+        roomId: room.id,
+        playerId: turnPlayerId!,
+        guess,
+      });
+
+      expect(result.state).toBe(RoomState.IN_PROGRESS);
+      expect(result.winner).toBeUndefined();
+      expect(result.exactMatches).toBe(0);
+      expect(result.nextTurnPlayer).toBeDefined();
+      expect(result.nextTurnPlayer.id).toBe(expectedNextTurnPlayerId);
+    });
+
+    it('should handle multiple turns correctly', async () => {
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      const joinRoomDto: JoinRoomServiceDto = {
+        code: room.code,
+        password: room.password,
+        username: 'Player2',
+      };
+      await roomsService.joinRoom(joinRoomDto);
+
+      const player1SetSecretData = {
+        roomId: room.id,
+        playerId: room.players[0]!.id,
+        secret: '1234',
+      };
+      await roomsService.setSecret(player1SetSecretData);
+
+      const player2SetSecretData = {
+        roomId: room.id,
+        playerId: room.players[1]!.id,
+        secret: '5678',
+      };
+      await roomsService.setSecret(player2SetSecretData);
+
+      const updatedRoom = await roomsService.getRoomByCode(room.code);
+      const turnPlayerId = updatedRoom.currentTurnPlayerId;
+
+      let guess: string;
+      if (turnPlayerId !== room.players[0]!.id) {
+        guess = '1111';
+      } else {
+        guess = '5555';
+      }
+
+      const result1 = await roomsService.makeGuess({
+        roomId: room.id,
+        playerId: turnPlayerId!,
+        guess,
+      });
+
+      const expectedNextTurnPlayerId =
+        turnPlayerId === room.players[0]!.id
+          ? room.players[1]!.id
+          : room.players[0]!.id;
+
+      expect(result1.state).toBe(RoomState.IN_PROGRESS);
+      expect(result1.winner).toBeUndefined();
+      expect(result1.exactMatches).toBe(1);
+      expect(result1.nextTurnPlayer).toBeDefined();
+      expect(result1.nextTurnPlayer.id).toBe(expectedNextTurnPlayerId);
+      expect(result1.currentTurn).toBe(1);
+
+      let guess2: string;
+      if (expectedNextTurnPlayerId === room.players[0]!.id) {
+        guess2 = '6666';
+      } else {
+        guess2 = '2222';
+      }
+      const result2 = await roomsService.makeGuess({
+        roomId: room.id,
+        playerId: expectedNextTurnPlayerId,
+        guess: guess2,
+      });
+
+      const expectedNextTurnPlayerId2 =
+        expectedNextTurnPlayerId === room.players[0]!.id
+          ? room.players[1]!.id
+          : room.players[0]!.id;
+
+      expect(result2.state).toBe(RoomState.IN_PROGRESS);
+      expect(result2.winner).toBeUndefined();
+      expect(result2.exactMatches).toBe(1);
+      expect(result2.nextTurnPlayer).toBeDefined();
+      expect(result2.nextTurnPlayer.id).toBe(expectedNextTurnPlayerId2);
+      expect(result2.currentTurn).toBe(2);
+
+      let guess3: string;
+      if (expectedNextTurnPlayerId2 === room.players[0]!.id) {
+        guess3 = '6666';
+      } else {
+        guess3 = '2222';
+      }
+      const result3 = await roomsService.makeGuess({
+        roomId: room.id,
+        playerId: expectedNextTurnPlayerId2,
+        guess: guess3,
+      });
+
+      const expectedNextTurnPlayerId3 =
+        expectedNextTurnPlayerId2 === room.players[0]!.id
+          ? room.players[1]!.id
+          : room.players[0]!.id;
+
+      expect(result3.state).toBe(RoomState.IN_PROGRESS);
+      expect(result3.winner).toBeUndefined();
+      expect(result3.exactMatches).toBe(1);
+      expect(result3.nextTurnPlayer).toBeDefined();
+      expect(result3.nextTurnPlayer.id).toBe(expectedNextTurnPlayerId3);
+      expect(result3.currentTurn).toBe(2);
+
+      let guess4: string;
+      if (expectedNextTurnPlayerId3 === room.players[0]!.id) {
+        guess4 = '6666';
+      } else {
+        guess4 = '2222';
+      }
+      const result4 = await roomsService.makeGuess({
+        roomId: room.id,
+        playerId: expectedNextTurnPlayerId3,
+        guess: guess4,
+      });
+
+      const expectedNextTurnPlayerId4 =
+        expectedNextTurnPlayerId3 === room.players[0]!.id
+          ? room.players[1]!.id
+          : room.players[0]!.id;
+
+      expect(result4.state).toBe(RoomState.IN_PROGRESS);
+      expect(result4.winner).toBeUndefined();
+      expect(result4.exactMatches).toBe(1);
+      expect(result4.nextTurnPlayer).toBeDefined();
+      expect(result4.nextTurnPlayer.id).toBe(expectedNextTurnPlayerId4);
+      expect(result4.currentTurn).toBe(3);
+    });
+  });
 });
