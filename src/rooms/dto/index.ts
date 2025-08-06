@@ -4,3 +4,6 @@ export * from './join-room.service.dto';
 export * from './join-room-response.dto';
 export * from './set-secret.controller.dto';
 export * from './set-secret.service.dto';
+export * from './make-guess.controller.dto';
+export * from './make-guess.service.dto';
+export * from './make-guess-response.dto';

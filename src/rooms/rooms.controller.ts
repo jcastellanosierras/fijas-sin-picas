@@ -13,6 +13,8 @@ import {
   JoinRoomControllerDto,
   SetSecretControllerBodyDto,
   SetSecretControllerParamsDto,
+  MakeGuessControllerBodyDto,
+  MakeGuessControllerParamsDto,
 } from './dto';
 
 @Controller('rooms')
@@ -51,6 +53,19 @@ export class RoomsController {
       roomId: params.roomId,
       playerId: params.playerId,
       secret: setSecretDto.secret,
+    });
+  }
+
+  @Post(':roomId/guess/:playerId')
+  @HttpCode(HttpStatus.OK)
+  async makeGuess(
+    @Param() params: MakeGuessControllerParamsDto,
+    @Body() guessDto: MakeGuessControllerBodyDto,
+  ) {
+    return await this.roomsService.makeGuess({
+      roomId: params.roomId,
+      playerId: params.playerId,
+      guess: guessDto.guess,
     });
   }
 }
