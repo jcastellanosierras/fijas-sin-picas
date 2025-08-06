@@ -565,10 +565,13 @@ describe('RoomsService', () => {
         secret: '5678',
       });
 
+      const updatedRoom = await roomsService.getRoomByCode(room.code);
+      const turnPlayerId = updatedRoom.currentTurnPlayerId;
+
       await expect(
         roomsService.makeGuess({
           roomId: room.id,
-          playerId: room.players[0]!.id,
+          playerId: turnPlayerId!,
           guess: '123',
         }),
       ).rejects.toThrow('Guess must be exactly 4 numeric digits');
