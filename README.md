@@ -23,7 +23,27 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+**Fijas Sin Picas** es un juego de lógica y adivinanzas para dos jugadores construido con [NestJS](https://github.com/nestjs/nest).
+
+### 🎮 ¿Cómo se juega?
+
+1. **Crear o unirse a una sala**: Un jugador crea una sala con código y contraseña, el segundo se une
+2. **Establecer números secretos**: Cada jugador elige un número secreto de 4 dígitos (ej: 1234, 0567)
+3. **Hacer adivinanzas por turnos**: Los jugadores alternan intentando adivinar el número secreto del oponente
+4. **Recibir pistas**: Después de cada intento, se indica cuántas "fijas" hay (dígitos correctos en la posición correcta)
+5. **Ganar**: El primer jugador en adivinar completamente el número del oponente gana
+
+### 🔢 Ejemplo de juego
+```
+Jugador A tiene el secreto: 1234
+Jugador B adivina: 1567 → 1 fija (el "1" está correcto)
+Jugador B adivina: 1298 → 2 fijas (el "1" y "2" están correctos)
+Jugador B adivina: 1234 → 4 fijas ¡GANÓ!
+```
+
+### 🏗️ Tecnología
+
+Este proyecto proporciona la **API REST** del juego, construida como un framework [Nest](https://github.com/nestjs/nest) TypeScript.
 
 ## Project setup
 
