@@ -82,7 +82,7 @@ export class RoomsService {
     const room = await this.getRoomById(guessDto.roomId);
     const player = await this.findPlayerInRoom(guessDto.playerId, room);
 
-    this.validateGuessRequest(room, player);
+    this.validateGuessRequest(room, player, guessDto.guess);
     this.addGuessToPlayer(player, guessDto.guess);
 
     const guessResult = this.createGuessResult(guessDto.guess, room, player);
@@ -276,9 +276,14 @@ export class RoomsService {
       .length;
   }
 
-  private validateGuessRequest(room: Room, player: Player): void {
+  private validateGuessRequest(
+    room: Room,
+    player: Player,
+    guess: string,
+  ): void {
     this.validateRoomStateOnMakeGuess(room);
     this.validatePlayerTurn(room, player);
+    this.validateGuess(guess);
   }
 
   private validatePlayerTurn(room: Room, player: Player): void {
