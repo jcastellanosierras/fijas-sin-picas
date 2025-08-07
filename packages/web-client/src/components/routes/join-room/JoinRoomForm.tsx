@@ -1,49 +1,48 @@
-import { useState } from 'react';
 import { Users } from 'lucide-react';
+import { useNavigate } from 'react-router';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { useGame } from '@/context/game';
+import { joinRoomSchema, type JoinRoomFormData } from '@/schemas/room';
 
-interface FormData {
-  code: string;
-  password: string;
-  username: string;
-}
-
-interface JoinRoomFormProps {
-  onSubmit: (formData: FormData) => void;
-  isLoading: boolean;
-}
-
-export const JoinRoomForm: React.FC<JoinRoomFormProps> = ({ onSubmit, isLoading }) => {
-  const [formData, setFormData] = useState<FormData>({
-    code: '',
-    password: '',
-    username: ''
+export const JoinRoomForm: React.FC = () => {
+  const { joinRoom, isLoading, error } = useGame();
+  const navigate = useNavigate();
+  
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<JoinRoomFormData>({
+    resolver: zodResolver(joinRoomSchema),
+    defaultValues: {
+      code: '',
+      password: '',
+      username: '',
+    },
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleChange = (field: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, [field]: e.target.value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+  const onSubmitForm = async (data: JoinRoomFormData) => {
+    const { data: joinedRoom, error } = await joinRoom(data);
+    if (error) {
+      return;
     }
-  };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(formData);
+    navigate(`/room/${joinedRoom.code}`);
   };
 
   return (
     <Card>
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <p className="text-red-500">{error}</p>
+      <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
         <Input
           label="Código de Sala"
           type="text"
-          value={formData.code}
-          onChange={handleChange('code')}
-          error={errors.code}
+          {...register('code')}
+          error={errors.code?.message}
           placeholder="Ej: SALA2024"
           helperText="Código proporcionado por el creador de la sala"
         />
@@ -51,9 +50,8 @@ export const JoinRoomForm: React.FC<JoinRoomFormProps> = ({ onSubmit, isLoading 
         <Input
           label="Contraseña"
           type="password"
-          value={formData.password}
-          onChange={handleChange('password')}
-          error={errors.password}
+          {...register('password')}
+          error={errors.password?.message}
           placeholder="Contraseña de la sala"
           helperText="Contraseña establecida por el creador"
         />
@@ -61,9 +59,8 @@ export const JoinRoomForm: React.FC<JoinRoomFormProps> = ({ onSubmit, isLoading 
         <Input
           label="Tu Nombre"
           type="text"
-          value={formData.username}
-          onChange={handleChange('username')}
-          error={errors.username}
+          {...register('username')}
+          error={errors.username?.message}
           placeholder="Ej: Jugador2"
           helperText="Nombre que verá tu oponente"
         />
