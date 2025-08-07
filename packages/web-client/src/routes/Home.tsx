@@ -1,4 +1,4 @@
-import { Hero, ActionCards, HowToPlay } from '../components/routes/home';
+import { Hero, ActionCards, HowToPlay } from '@/components/routes/home';
 
 export const Home: React.FC = () => {
   return (

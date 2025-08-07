@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
-import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
 import { useNavigate } from 'react-router';
+import { ArrowLeft } from 'lucide-react';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 
 export const CreateRoom: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);

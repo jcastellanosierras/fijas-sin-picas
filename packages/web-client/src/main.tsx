@@ -2,9 +2,9 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router';
 
-import { Home } from './routes/Home';
-import { CreateRoom } from './routes/CreateRoom';
-import { JoinRoom } from './routes/JoinRoom';
+import { Home } from '@/routes/Home';
+import { CreateRoom } from '@/routes/CreateRoom';
+import { JoinRoom } from '@/routes/JoinRoom';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
