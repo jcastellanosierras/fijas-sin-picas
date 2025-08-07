@@ -1,5 +1,6 @@
 import { useGameAPI } from '@/hooks/useGameAPI';
-import type { CreateRoomDto, JoinRoomDto, Player, Room } from '@/types/rooms';
+import type { Result } from '@/lib/result';
+import type { CreateRoomDto, CreateRoomResponse, JoinRoomDto, JoinRoomResponse, Player, Room } from '@/types/rooms';
 import { createContext, useContext, useEffect, useState } from 'react';
 
 interface GameContextType {
@@ -9,10 +10,10 @@ interface GameContextType {
   error: string | null;
   isLoading: boolean;
 
-  createRoom: (room: CreateRoomDto) => Promise<void>;
-  joinRoom: (room: JoinRoomDto) => Promise<void>;
-  fetchRoom: (code?: string) => Promise<void>;
-  getRoom: (code: string) => Promise<Room | null>;
+  createRoom: (room: CreateRoomDto) => Promise<Result<CreateRoomResponse>>;
+  joinRoom: (room: JoinRoomDto) => Promise<Result<JoinRoomResponse>>;
+  fetchRoom: (code?: string) => Promise<Result<void>>;
+  getRoom: (code: string) => Promise<Result<Room | null>>;
 
   saveSession: () => void;
   clearSession: () => void;
@@ -23,10 +24,10 @@ const GameContext = createContext<GameContextType>({
   player: null,
   error: null,
   isLoading: false,
-  createRoom: async () => {},
-  joinRoom: async () => {},
-  fetchRoom: async () => {},
-  getRoom: async () => null,
+  createRoom: async () => ({ data: null, error: new Error('Not implemented') }),
+  joinRoom: async () => ({ data: null, error: new Error('Not implemented') }),
+  fetchRoom: async () => ({ data: null, error: new Error('Not implemented') }),
+  getRoom: async () => ({ data: null, error: new Error('Not implemented') }),
   saveSession: () => {},
   clearSession: () => {},
 });
@@ -60,17 +61,27 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.removeItem('fijas-sin-picas-player');
   };
 
-  const createRoom = async (room: CreateRoomDto) => {
-    const newRoom = await gameAPI.createRoom(room);
+  const createRoom = async (room: CreateRoomDto): Promise<Result<CreateRoomResponse>> => {
+    const { data: newRoom, error } = await gameAPI.createRoom(room);
+    if (error) {
+      return { data: null, error };
+    }
+
     setRoom(newRoom);
     saveSession();
+
+    return { data: newRoom, error: null };
   };
 
-  const joinRoom = async (room: JoinRoomDto) => {
-    const joinedRoom = await gameAPI.joinRoom(room);
+  const joinRoom = async (room: JoinRoomDto): Promise<Result<JoinRoomResponse>> => {
+    const { data: joinedRoom, error } = await gameAPI.joinRoom(room);
+    if (error) {
+      return { data: null, error };
+    }
+
     const newPlayer = joinedRoom?.players[1];
     if (!newPlayer) {
-      return;
+      return { data: null, error: new Error('No new player') };
     }
 
     setPlayer({
@@ -79,18 +90,39 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       guesses: [],
     });
 
-    const updatedRoom = await gameAPI.getRoom(joinedRoom.code);
+    const { data: updatedRoom, error: error2 } = await gameAPI.getRoom(
+      joinedRoom.code,
+    );
+    if (error2) {
+      return { data: null, error: error2 };
+    }
+
     setRoom(updatedRoom);
     saveSession();
+
+    return { data: joinedRoom, error: null };
   };
 
-  const fetchRoom = async (code?: string) => {
-    const updatedRoom = await gameAPI.getRoom(code ?? room?.code ?? '');
+  const fetchRoom = async (code?: string): Promise<Result<void>> => {
+    const { data: updatedRoom, error: error2 } = await gameAPI.getRoom(
+      code ?? room?.code ?? '',
+    );
+    if (error2) {
+      return { data: null, error: error2 };
+    }
+
     setRoom(updatedRoom);
+
+    return { data: undefined, error: null };
   };
 
-  const getRoom = async (code: string): Promise<Room | null> => {
-    return await gameAPI.getRoom(code);
+  const getRoom = async (code: string): Promise<Result<Room | null>> => {
+    const { data: updatedRoom, error: error2 } = await gameAPI.getRoom(code);
+    if (error2) {
+      return { data: null, error: error2 };
+    }
+
+    return { data: updatedRoom, error: null };
   };
 
   return (

@@ -38,9 +38,7 @@ export interface CreateRoomDto {
   username: string;
 }
 
-export interface JoinRoomDto {
-  code: string;
-}
+export type JoinRoomDto = CreateRoomDto;
 
 export type CreateRoomResponse = Room;
 

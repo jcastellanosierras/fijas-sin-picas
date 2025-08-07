@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { AxiosResponse } from 'axios';
 import { httpClient } from '@/lib/clients/http-client';
 import type {
   CreateRoomDto,
@@ -7,42 +8,40 @@ import type {
   JoinRoomResponse,
   Room,
 } from '@/types/rooms';
+import type { Result } from '@/lib/result';
+
+const SUCCESS_STATUS_CODES = [200, 201, 204];
 
 export const useGameAPI = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleAPICall = async <T>(
-    apiCall: () => Promise<Response>,
-  ): Promise<T | null> => {
+    apiCall: () => Promise<AxiosResponse>,
+  ): Promise<Result<T>> => {
     try {
       setIsLoading(true);
       setError(null);
 
       const response = await apiCall();
 
-      if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({ message: 'Error desconocido' }));
-        throw new Error(errorData.message || `Error HTTP: ${response.status}`);
+      if (!SUCCESS_STATUS_CODES.includes(response.status)) {
+        throw new Error(
+          response.data.message ||
+            `Error HTTP: ${response.status} ${response.statusText}`,
+        );
       }
 
-      if (
-        response.status === 200 &&
-        response.headers.get('content-length') === '0'
-      ) {
-        return null;
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error desconocido';
-      setError(message);
-      throw err;
-    } finally {
       setIsLoading(false);
+
+      return { data: response.data, error: null };
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Unknown error');
+
+      setIsLoading(false);
+      setError(error.message);
+
+      return { data: null, error };
     }
   };
 
@@ -58,7 +57,10 @@ export const useGameAPI = () => {
 
   const joinRoom = async (room: JoinRoomDto) => {
     return await handleAPICall<JoinRoomResponse>(() =>
-      httpClient.post('/rooms/join', room),
+      httpClient.post(`/rooms/${room.code}/join`, {
+        password: room.password,
+        username: room.username,
+      }),
     );
   };
 
