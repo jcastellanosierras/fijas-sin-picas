@@ -1,45 +1,53 @@
-interface ButtonProps {
-  children: React.ReactNode;
-  onClick?: () => void;
-  variant?: 'primary' | 'secondary' | 'success';
+import React from 'react';
+import { LoadingSpinner } from './LoadingSpinner';
+
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'danger';
   size?: 'sm' | 'md' | 'lg';
-  className?: string;
-  disabled?: boolean;
+  loading?: boolean;
+  children: React.ReactNode;
 }
 
-export const Button: React.FC<ButtonProps> = ({ 
-  children, 
-  onClick, 
-  variant = 'primary', 
+export const Button: React.FC<ButtonProps> = ({
+  variant = 'primary',
   size = 'md',
+  loading = false,
+  disabled,
+  children,
   className = '',
-  disabled = false
+  ...props
 }) => {
-  const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
-  
-  const variantClasses = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
-    secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500',
-    success: 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500'
-  };
-  
+  const baseClasses =
+    'font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+
   const sizeClasses = {
-    sm: 'px-3 py-2 text-sm',
+    sm: 'px-3 py-1.5 text-sm',
     md: 'px-4 py-2 text-base',
-    lg: 'px-6 py-3 text-lg'
+    lg: 'px-6 py-3 text-lg',
   };
-  
-  const disabledClasses = disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer';
-  
-  const classes = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${disabledClasses} ${className}`;
-  
+
+  const variantClasses = {
+    primary:
+      'bg-blue-500 hover:bg-blue-600 text-white focus:ring-blue-500 active:bg-blue-700',
+    secondary:
+      'bg-gray-500 hover:bg-gray-600 text-white focus:ring-gray-500 active:bg-gray-700',
+    success:
+      'bg-green-500 hover:bg-green-600 text-white focus:ring-green-500 active:bg-green-700',
+    warning:
+      'bg-yellow-500 hover:bg-yellow-600 text-white focus:ring-yellow-500 active:bg-yellow-700',
+    danger:
+      'bg-red-500 hover:bg-red-600 text-white focus:ring-red-500 active:bg-red-700',
+  };
+
   return (
-    <button 
-      className={classes}
-      onClick={onClick}
-      disabled={disabled}
+    <button
+      {...props}
+      disabled={disabled || loading}
+      className={`${baseClasses} ${sizeClasses[size]} ${variantClasses[variant]} ${className}`}
     >
-      {children}
+      <div className="flex items-center justify-center space-x-2">
+        {loading ? <LoadingSpinner size="sm" /> : children}
+      </div>
     </button>
   );
 };
