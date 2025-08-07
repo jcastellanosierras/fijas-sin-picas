@@ -7,6 +7,12 @@ settings:
 importers:
 
   .:
+    devDependencies:
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.3
+
+  packages/backend:
     dependencies:
       '@nestjs/common':
         specifier: ^11.0.1
