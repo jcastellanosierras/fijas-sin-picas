@@ -13,9 +13,14 @@
     "build:backend": "pnpm --filter @fijas-sin-picas/backend build",
     "test:backend": "pnpm --filter @fijas-sin-picas/backend test",
     "lint:backend": "pnpm --filter @fijas-sin-picas/backend lint",
-    "build": "pnpm run build:backend",
+    "dev:frontend": "pnpm --filter @fijas-sin-picas/web-client dev",
+    "build:frontend": "pnpm --filter @fijas-sin-picas/web-client build",
+    "lint:frontend": "pnpm --filter @fijas-sin-picas/web-client lint",
+    "preview:frontend": "pnpm --filter @fijas-sin-picas/web-client preview",
+    "build": "pnpm run build:backend && pnpm run build:frontend",
     "dev": "pnpm run dev:backend",
-    "lint": "pnpm run lint:backend",
+    "dev:all": "pnpm run --parallel dev:backend dev:frontend",
+    "lint": "pnpm run lint:backend && pnpm run lint:frontend",
     "test": "pnpm run test:backend"
   },
   "devDependencies": {

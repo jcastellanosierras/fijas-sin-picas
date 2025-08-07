@@ -7,7 +7,8 @@ Este es un monorepo que contiene todas las aplicaciones del juego "Fijas Sin Pic
 ```
 fijas-sin-picas/
 ├── packages/
-│   └── backend/          # API NestJS
+│   ├── backend/          # API NestJS
+│   └── web-client/       # Frontend React + Vite
 ├── pnpm-workspace.yaml   # Configuración de workspaces
 └── package.json          # Configuración raíz del monorepo
 ```
@@ -42,11 +43,30 @@ pnpm run test:backend
 pnpm run lint:backend
 ```
 
+### Frontend (React + Vite)
+
+```bash
+# Desarrollo del frontend
+pnpm run dev:frontend
+
+# Compilar el frontend
+pnpm run build:frontend
+
+# Lint del frontend
+pnpm run lint:frontend
+
+# Preview del build
+pnpm run preview:frontend
+```
+
 ### Scripts globales
 
 ```bash
 # Desarrollo (ejecuta el backend)
 pnpm run dev
+
+# Desarrollo de todas las aplicaciones en paralelo
+pnpm run dev:all
 
 # Compilar todo
 pnpm run build
