@@ -3,7 +3,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
-import { Player, Room, RoomState } from './entities/room.entity';
+import { Guess, Player, Room, RoomState } from './entities/room.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { JoinRoomServiceDto } from './dto/join-room.service.dto';
 import { JoinRoomResponseDto } from './dto/join-room-response.dto';
@@ -85,7 +85,14 @@ export class RoomsService {
     this.validateGuessRequest(room, player, guessDto.guess);
     this.addGuessToPlayer(player, guessDto.guess);
 
-    const guessResult = this.createGuessResult(guessDto.guess, room, player);
+    const guess: Guess = {
+      id: crypto.randomUUID(),
+      playerId: player.id,
+      guess: guessDto.guess,
+      createdAt: new Date(),
+    };
+
+    const guessResult = this.createGuessResult(guess, room, player);
     const exactMatches = this.calculateExactMatches(
       guessDto.guess,
       this.getOpponentSecret(room, player),
@@ -304,7 +311,7 @@ export class RoomsService {
   }
 
   private createGuessResult(
-    guess: string,
+    guess: Guess,
     room: Room,
     currentPlayer: Player,
   ): MakeGuessResponseDto {
@@ -312,7 +319,8 @@ export class RoomsService {
 
     return {
       id: crypto.randomUUID(),
-      guess,
+      guess: guess.guess,
+      guessId: guess.id,
       exactMatches: 0,
       nextTurnPlayer: {
         id: nextPlayer.id,
