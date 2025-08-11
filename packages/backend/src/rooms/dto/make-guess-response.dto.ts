@@ -8,6 +8,7 @@ export interface RivalInfo {
 export class MakeGuessResponseDto {
   id: string;
   guess: string;
+  guessId: string;
   exactMatches: number;
   nextTurnPlayer: RivalInfo;
   currentTurn: number;
