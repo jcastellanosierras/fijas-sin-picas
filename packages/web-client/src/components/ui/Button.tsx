@@ -2,7 +2,7 @@ import React from 'react';
 import { LoadingSpinner } from './LoadingSpinner';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'danger';
+  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   children: React.ReactNode;
@@ -37,6 +37,8 @@ export const Button: React.FC<ButtonProps> = ({
       'bg-yellow-500 hover:bg-yellow-600 text-white focus:ring-yellow-500 active:bg-yellow-700',
     danger:
       'bg-red-500 hover:bg-red-600 text-white focus:ring-red-500 active:bg-red-700',
+    outline:
+      'bg-transparent border border-gray-300 hover:bg-gray-50 text-gray-700 focus:ring-gray-500 active:bg-gray-100',
   };
 
   return (
