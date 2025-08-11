@@ -41,8 +41,8 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
   const gameAPI = useGameAPI();
 
   const loadSession = () => {
-    const room = localStorage.getItem('fijas-sin-picas-room');
-    const player = localStorage.getItem('fijas-sin-picas-player');
+    const room = sessionStorage.getItem('fijas-sin-picas-room');
+    const player = sessionStorage.getItem('fijas-sin-picas-player');
     if (room && player) {
       setRoom(JSON.parse(room));
       setPlayer(JSON.parse(player));
@@ -53,14 +53,18 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     loadSession();
   }, []);
 
-  const saveSession = () => {
-    localStorage.setItem('fijas-sin-picas-room', JSON.stringify(room));
-    localStorage.setItem('fijas-sin-picas-player', JSON.stringify(player));
+  const saveSession = (newRoom?: Room, newPlayer?: Player) => {
+    if (newRoom) {
+      sessionStorage.setItem('fijas-sin-picas-room', JSON.stringify(newRoom));
+    }
+    if (newPlayer) {
+      sessionStorage.setItem('fijas-sin-picas-player', JSON.stringify(newPlayer));
+    }
   };
 
   const clearSession = () => {
-    localStorage.removeItem('fijas-sin-picas-room');
-    localStorage.removeItem('fijas-sin-picas-player');
+    sessionStorage.removeItem('fijas-sin-picas-room');
+    sessionStorage.removeItem('fijas-sin-picas-player');
   };
 
   const createRoom = async (room: CreateRoomDto): Promise<Result<CreateRoomResponse>> => {
@@ -69,8 +73,15 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       return { data: null, error };
     }
 
+    const newPlayer = newRoom.players[0];
+    if (!newPlayer) {
+      return { data: null, error: new Error('No new player') };
+    }
+
+    setPlayer(newPlayer);
     setRoom(newRoom);
-    saveSession();
+
+    saveSession(newRoom, newPlayer);
 
     return { data: newRoom, error: null };
   };
@@ -86,11 +97,13 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       return { data: null, error: new Error('No new player') };
     }
 
-    setPlayer({
+    const newPlayerInfo = {
       id: newPlayer.id,
       username: newPlayer.username,
       guesses: [],
-    });
+    };
+
+    setPlayer(newPlayerInfo);
 
     const { data: updatedRoom, error: error2 } = await gameAPI.getRoom(
       joinedRoom.code,
@@ -100,7 +113,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     setRoom(updatedRoom);
-    saveSession();
+    saveSession(updatedRoom, newPlayerInfo);
 
     return { data: joinedRoom, error: null };
   };
