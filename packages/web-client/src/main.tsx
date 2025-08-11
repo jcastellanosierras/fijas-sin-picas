@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router';
+import { Toaster } from 'sonner';
 
 import { Home } from '@/routes/Home';
 import { CreateRoom } from '@/routes/CreateRoom';
@@ -11,6 +12,7 @@ import { GameProvider } from '@/context/game';
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <GameProvider>
+      <Toaster position="top-center" richColors closeButton />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
