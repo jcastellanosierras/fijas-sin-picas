@@ -6,6 +6,7 @@ import type {
   CreateRoomResponse,
   JoinRoomDto,
   JoinRoomResponse,
+  MakeGuessResponse,
   Room,
 } from '@/types/rooms';
 import type { Result } from '@/lib/result';
@@ -64,7 +65,11 @@ export const useGameAPI = () => {
     );
   };
 
-  const setSecret = async (roomId: string, playerId: string, secret: string) => {
+  const setSecret = async (
+    roomId: string,
+    playerId: string,
+    secret: string,
+  ) => {
     return await handleAPICall<void>(() =>
       httpClient.post(`/rooms/${roomId}/secret/${playerId}`, {
         secret,
@@ -72,5 +77,21 @@ export const useGameAPI = () => {
     );
   };
 
-  return { createRoom, joinRoom, getRoom, setSecret, isLoading, error };
+  const makeGuess = async (roomId: string, playerId: string, guess: string) => {
+    return await handleAPICall<MakeGuessResponse>(() =>
+      httpClient.post(`/rooms/${roomId}/guess/${playerId}`, {
+        guess,
+      }),
+    );
+  };
+
+  return {
+    createRoom,
+    joinRoom,
+    getRoom,
+    setSecret,
+    makeGuess,
+    isLoading,
+    error,
+  };
 };

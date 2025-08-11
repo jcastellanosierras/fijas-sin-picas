@@ -1,6 +1,14 @@
 import { useGameAPI } from '@/hooks/useGameAPI';
 import type { Result } from '@/lib/result';
-import type { CreateRoomDto, CreateRoomResponse, JoinRoomDto, JoinRoomResponse, Player, Room } from '@/types/rooms';
+import type {
+  CreateRoomDto,
+  CreateRoomResponse,
+  JoinRoomDto,
+  JoinRoomResponse,
+  MakeGuessResponse,
+  Player,
+  Room,
+} from '@/types/rooms';
 import { createContext, useContext, useEffect, useState } from 'react';
 
 interface GameContextType {
@@ -13,6 +21,7 @@ interface GameContextType {
   createRoom: (room: CreateRoomDto) => Promise<Result<CreateRoomResponse>>;
   joinRoom: (room: JoinRoomDto) => Promise<Result<JoinRoomResponse>>;
   setSecret: (secret: string) => Promise<Result<void>>;
+  makeGuess: (guess: string) => Promise<Result<MakeGuessResponse>>;
   fetchRoom: (code?: string) => Promise<Result<void>>;
   getRoom: (code: string) => Promise<Result<Room | null>>;
   leaveRoom: () => void;
@@ -29,6 +38,7 @@ const GameContext = createContext<GameContextType>({
   createRoom: async () => ({ data: null, error: new Error('Not implemented') }),
   joinRoom: async () => ({ data: null, error: new Error('Not implemented') }),
   setSecret: async () => ({ data: null, error: new Error('Not implemented') }),
+  makeGuess: async () => ({ data: null, error: new Error('Not implemented') }),
   fetchRoom: async () => ({ data: null, error: new Error('Not implemented') }),
   getRoom: async () => ({ data: null, error: new Error('Not implemented') }),
   leaveRoom: () => {},
@@ -60,7 +70,10 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       sessionStorage.setItem('fijas-sin-picas-room', JSON.stringify(newRoom));
     }
     if (newPlayer) {
-      sessionStorage.setItem('fijas-sin-picas-player', JSON.stringify(newPlayer));
+      sessionStorage.setItem(
+        'fijas-sin-picas-player',
+        JSON.stringify(newPlayer),
+      );
     }
   };
 
@@ -69,7 +82,9 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     sessionStorage.removeItem('fijas-sin-picas-player');
   };
 
-  const createRoom = async (room: CreateRoomDto): Promise<Result<CreateRoomResponse>> => {
+  const createRoom = async (
+    room: CreateRoomDto,
+  ): Promise<Result<CreateRoomResponse>> => {
     const { data: newRoom, error } = await gameAPI.createRoom(room);
     if (error) {
       return { data: null, error };
@@ -88,7 +103,9 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     return { data: newRoom, error: null };
   };
 
-  const joinRoom = async (room: JoinRoomDto): Promise<Result<JoinRoomResponse>> => {
+  const joinRoom = async (
+    room: JoinRoomDto,
+  ): Promise<Result<JoinRoomResponse>> => {
     const { data: joinedRoom, error } = await gameAPI.joinRoom(room);
     if (error) {
       return { data: null, error };
@@ -133,6 +150,21 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     return { data: undefined, error: null };
   };
 
+  const makeGuess = async (
+    guess: string,
+  ): Promise<Result<MakeGuessResponse>> => {
+    if (!room || !player) {
+      return { data: null, error: new Error('No room or player') };
+    }
+
+    const { data, error } = await gameAPI.makeGuess(room.id, player.id, guess);
+    if (error) {
+      return { data: null, error };
+    }
+
+    return { data, error: null };
+  };
+
   const fetchRoom = async (code?: string): Promise<Result<void>> => {
     const { data: updatedRoom, error: error2 } = await gameAPI.getRoom(
       code ?? room?.code ?? '',
@@ -142,6 +174,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     setRoom(updatedRoom);
+    saveSession(updatedRoom);
 
     return { data: undefined, error: null };
   };
@@ -171,6 +204,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
         createRoom,
         joinRoom,
         setSecret,
+        makeGuess,
         fetchRoom,
         getRoom,
         leaveRoom,
