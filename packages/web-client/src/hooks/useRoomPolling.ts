@@ -26,7 +26,6 @@ export const useRoomPolling = ({
     setError(null);
 
     const result = await getRoom(roomCode);
-    console.log(result);
     if (result.error) {
       setError(result.error.message);
     } else {
