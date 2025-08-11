@@ -29,6 +29,7 @@ export class Room {
   public currentTurn: number = 0;
   public currentTurnPlayerId: Player['id'] | null = null;
   public winner?: Player['id'];
+  public secrets?: [string, string];
   public readonly createdAt: Date = new Date();
 
   constructor(id: string, code: string, password: string) {

@@ -83,10 +83,10 @@ export class RoomsService {
     const player = await this.findPlayerInRoom(guessDto.playerId, room);
 
     this.validateGuessRequest(room, player, guessDto.guess);
-    this.addGuessToPlayer(player, guessDto.guess);
+    const guessId = this.addGuessToPlayer(player, guessDto.guess);
 
     const guess: Guess = {
-      id: crypto.randomUUID(),
+      id: guessId,
       playerId: player.id,
       guess: guessDto.guess,
       createdAt: new Date(),
@@ -301,13 +301,16 @@ export class RoomsService {
     }
   }
 
-  private addGuessToPlayer(player: Player, guess: string): void {
+  private addGuessToPlayer(player: Player, guess: string): string {
+    const guessId = crypto.randomUUID();
     player.guesses.push({
-      id: crypto.randomUUID(),
+      id: guessId,
       playerId: player.id,
       guess,
       createdAt: new Date(),
     });
+
+    return guessId;
   }
 
   private createGuessResult(
@@ -356,6 +359,8 @@ export class RoomsService {
     guessResult.winner = winner;
     guessResult.state = RoomState.FINISHED;
     room.state = RoomState.FINISHED;
+    room.winner = winner.id;
+    room.secrets = [winner.secret!, this.getOpponentSecret(room, winner)];
   }
 
   private handleNonWinningGuess(
