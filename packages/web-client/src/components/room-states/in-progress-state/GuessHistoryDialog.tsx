@@ -1,16 +1,16 @@
-import { Medal, Maximize2 } from 'lucide-react';
-import { useState } from 'react';
+import React from 'react';
+import { Medal, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { useGuessesResults } from '@/context/guesses-results';
 import type { Guess, Player } from '@/types/rooms';
 
-interface GuessHistoryProps {
+interface GuessHistoryDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
   currentPlayer: Player;
   otherPlayer: Player;
   otherPlayerUsername: string;
-  onOpenDialog: () => void;
 }
 
 enum TabType {
@@ -18,14 +18,15 @@ enum TabType {
   OPPONENT_GUESSES = 'opponent-guesses',
 }
 
-export const GuessHistory: React.FC<GuessHistoryProps> = ({
+export const GuessHistoryDialog: React.FC<GuessHistoryDialogProps> = ({
+  isOpen,
+  onClose,
   currentPlayer,
   otherPlayer,
   otherPlayerUsername,
-  onOpenDialog,
 }) => {
   const { getGuessResult } = useGuessesResults();
-  const [activeTab, setActiveTab] = useState<TabType>(TabType.MY_GUESSES);
+  const [activeTab, setActiveTab] = React.useState<TabType>(TabType.MY_GUESSES);
 
   const getMyGuessResultDisplay = (guess: Guess) => {
     const result = getGuessResult(guess.id);
@@ -103,56 +104,62 @@ export const GuessHistory: React.FC<GuessHistoryProps> = ({
     );
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Card>
-      <div className="mb-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Historial de Adivinanzas</h2>
-          
-          {/* Botón para abrir dialog en escritorio */}
+    <div className="fixed inset-0 bg-black/20 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">Historial de Adivinanzas</h2>
           <Button
+            variant="secondary"
             size="sm"
-            variant="outline"
-            onClick={onOpenDialog}
-            className="hidden md:flex items-center space-x-2 cursor-pointer"
+            onClick={onClose}
+            className="p-1"
           >
-            <Maximize2 className="h-4 w-4" />
+            <X className="h-4 w-4" />
           </Button>
         </div>
-        
+
         {/* Tabs */}
-        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-          <button
-            onClick={() => setActiveTab(TabType.MY_GUESSES)}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-              activeTab === TabType.MY_GUESSES
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <div className="flex items-center justify-center space-x-2">
-              <Medal className="h-4 w-4 text-blue-500" />
-              <span>Tus Adivinanzas</span>
-            </div>
-          </button>
-          
-          <button
-            onClick={() => setActiveTab(TabType.OPPONENT_GUESSES)}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-              activeTab === TabType.OPPONENT_GUESSES
-                ? 'bg-white text-purple-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <div className="flex items-center justify-center space-x-2">
-              <Medal className="h-4 w-4 text-purple-500" />
-              <span>{otherPlayerUsername}</span>
-            </div>
-          </button>
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+            <button
+              onClick={() => setActiveTab(TabType.MY_GUESSES)}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                activeTab === TabType.MY_GUESSES
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <Medal className="h-4 w-4 text-blue-500" />
+                <span>Tus Adivinanzas</span>
+              </div>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab(TabType.OPPONENT_GUESSES)}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                activeTab === TabType.OPPONENT_GUESSES
+                  ? 'bg-white text-purple-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <Medal className="h-4 w-4 text-purple-500" />
+                <span>{otherPlayerUsername}</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-4">
+          {renderTabContent()}
         </div>
       </div>
-
-      {renderTabContent()}
-    </Card>
+    </div>
   );
 };

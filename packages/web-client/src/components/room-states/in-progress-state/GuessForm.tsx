@@ -75,16 +75,16 @@ export const GuessForm: React.FC<GuessFormProps> = ({
 
   if (!isMyTurn) {
     return (
-      <Card>
-        <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-          <Target className="h-5 w-5 mr-2 text-blue-500" />
+      <Card className="p-3 md:p-5">
+        <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-2 md:mb-3 flex items-center">
+          <Target className="h-4 w-4 md:h-5 md:w-5 mr-2 text-blue-500" />
           Hacer Adivinanza
         </h2>
         
-        <div className="bg-yellow-50 rounded-lg p-6 text-center">
-          <Target className="h-12 w-12 text-yellow-500 mx-auto mb-3 animate-pulse" />
-          <h3 className="text-lg font-semibold text-yellow-800 mb-2">Esperando Turno</h3>
-          <p className="text-yellow-600">
+        <div className="bg-yellow-50 rounded-lg p-3 md:p-5 text-center">
+          <Target className="h-6 w-6 md:h-10 md:w-10 text-yellow-500 mx-auto mb-2 animate-pulse" />
+          <h3 className="text-sm md:text-base font-semibold text-yellow-800 mb-1 md:mb-2">Esperando Turno</h3>
+          <p className="text-xs md:text-sm text-yellow-600">
             Es el turno de {otherPlayerUsername}. Espera tu turno para hacer la siguiente adivinanza.
           </p>
         </div>
@@ -93,20 +93,20 @@ export const GuessForm: React.FC<GuessFormProps> = ({
   }
 
   return (
-    <Card>
-      <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-        <Target className="h-5 w-5 mr-2 text-blue-500" />
+    <Card className="p-3 md:p-5 flex-1">
+      <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-2 md:mb-3 flex items-center">
+        <Target className="h-4 w-4 md:h-5 md:w-5 mr-2 text-blue-500" />
         Hacer Adivinanza
       </h2>
 
       {gameError && (
-        <div className="mb-6">
+        <div className="mb-3 md:mb-4">
           <ErrorAlert message={gameError} onClose={() => {}} />
         </div>
       )}
 
       <form onSubmit={handleSubmit(onSubmitForm)}>
-        <div className="space-y-4">
+        <div className="space-y-2 md:space-y-3">
           <Input
             label="Tu Adivinanza"
             type="text"
@@ -115,7 +115,7 @@ export const GuessForm: React.FC<GuessFormProps> = ({
             error={errors.guess?.message}
             placeholder="0000"
             maxLength={4}
-            className="text-center text-2xl font-mono tracking-widest"
+            className="text-center text-lg md:text-xl font-mono tracking-widest"
             helperText={`Intenta adivinar el número de ${otherPlayerUsername}`}
           />
 
@@ -124,9 +124,9 @@ export const GuessForm: React.FC<GuessFormProps> = ({
             loading={isSubmitting}
             disabled={isSubmitting}
             className="w-full"
-            size="lg"
+            size="md"
           >
-            <Trophy className="h-5 w-5 mr-2" />
+            <Trophy className="h-4 w-4 md:h-5 md:w-5 mr-2" />
             Enviar Adivinanza
           </Button>
         </div>

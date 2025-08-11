@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-import { 
-  GameStatus, 
-  GuessForm, 
-  GuessHistory, 
-  Header, 
-  TipCard 
+import {
+  GameStatus,
+  GuessForm,
+  GuessHistory,
+  GuessHistoryDialog,
+  Header,
+  MobileHistoryButton,
+  PlayerSecret,
+  TipCard,
 } from './in-progress-state';
 import { GuessesResultsProvider } from '@/context/guesses-results';
 import { useGame } from '@/context/game';
@@ -17,6 +20,7 @@ interface InProgressStateProps {
 
 const InProgressStateContent: React.FC<InProgressStateProps> = ({ room }) => {
   const { player, fetchRoom } = useGame();
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
 
   if (!room || !player) return null;
 
@@ -29,35 +33,68 @@ const InProgressStateContent: React.FC<InProgressStateProps> = ({ room }) => {
     fetchRoom();
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        <Header />
-        
-        <GameStatus 
-          room={room} 
-          isMyTurn={isMyTurn} 
-          otherPlayerUsername={otherPlayer?.username || 'Oponente'} 
-        />
+  const handleOpenHistory = () => {
+    setIsHistoryDialogOpen(true);
+  };
 
-        <div className="grid lg:grid-cols-2 gap-8">
-          <GuessForm 
+  const handleCloseHistory = () => {
+    setIsHistoryDialogOpen(false);
+  };
+
+  if (!currentPlayer || !otherPlayer) return null;
+
+  const totalGuesses =
+    (currentPlayer.guesses?.length || 0) + (otherPlayer.guesses?.length || 0);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-4 md:py-8 px-3 md:px-4 overflow-x-hidden">
+      <Header />
+
+      <GameStatus
+        room={room}
+        isMyTurn={isMyTurn}
+        otherPlayerUsername={otherPlayer.username}
+      />
+
+      <div className="flex-1 grid lg:grid-cols-2 gap-4 md:gap-6">
+        <div className="flex flex-col">
+          {currentPlayer.secret && (
+            <PlayerSecret secret={currentPlayer.secret} />
+          )}
+
+          <GuessForm
             isMyTurn={isMyTurn}
-            otherPlayerUsername={otherPlayer?.username || 'Oponente'}
+            otherPlayerUsername={otherPlayer.username}
             onGuessSubmitted={handleGuessSubmitted}
           />
-          
-          <GuessHistory 
-            currentPlayer={currentPlayer!}
-            otherPlayer={otherPlayer!}
-            otherPlayerUsername={otherPlayer?.username || 'Oponente'}
-          />
         </div>
 
-        <div className="mt-8">
-          <TipCard />
+        <div className="hidden md:block">
+          <GuessHistory
+            currentPlayer={currentPlayer}
+            otherPlayer={otherPlayer}
+            otherPlayerUsername={otherPlayer.username}
+            onOpenDialog={handleOpenHistory}
+          />
         </div>
       </div>
+
+      <div className="block md:hidden mt-4">
+        <MobileHistoryButton
+          onClick={handleOpenHistory}
+          totalGuesses={totalGuesses}
+        />
+      </div>
+
+      {/* Dialog del historial para móvil */}
+      <GuessHistoryDialog
+        isOpen={isHistoryDialogOpen}
+        onClose={handleCloseHistory}
+        currentPlayer={currentPlayer}
+        otherPlayer={otherPlayer}
+        otherPlayerUsername={otherPlayer.username}
+      />
+      <TipCard />
     </div>
   );
 };

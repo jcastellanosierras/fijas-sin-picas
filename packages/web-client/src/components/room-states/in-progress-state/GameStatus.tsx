@@ -1,7 +1,6 @@
 import React from 'react';
 import { Clock, Target, User } from 'lucide-react';
 
-import { Card } from '@/components/ui/Card';
 import type { Room } from '@/types/rooms';
 
 interface GameStatusProps {
@@ -16,32 +15,25 @@ export const GameStatus: React.FC<GameStatusProps> = ({
   otherPlayerUsername 
 }) => {
   return (
-    <div className="grid md:grid-cols-3 gap-6 mb-8">
-      <Card>
-        <div className="text-center">
-          <Clock className="h-8 w-8 text-blue-500 mx-auto mb-2" />
-          <p className="text-sm text-gray-600">Turno Actual</p>
-          <p className="text-lg font-semibold text-gray-900">#{room.currentTurn}</p>
+    <div className="mb-3 md:mb-4">
+      <div className="flex justify-center space-x-3 md:space-x-5 text-xs md:text-sm">
+        <div className="flex items-center space-x-1 md:space-x-2 text-gray-700">
+          <Clock className="h-3 w-3 md:h-4 md:w-4 text-blue-500" />
+          <span>Turno #{room.currentTurn}</span>
         </div>
-      </Card>
 
-      <Card>
-        <div className="text-center">
-          <User className="h-8 w-8 text-green-500 mx-auto mb-2" />
-          <p className="text-sm text-gray-600">Turno de</p>
-          <p className="text-lg font-semibold text-gray-900">
-            {isMyTurn ? 'TÚ' : otherPlayerUsername || 'Oponente'}
-          </p>
+        <div className="flex items-center space-x-1 md:space-x-2 text-gray-700">
+          <User className="h-3 w-3 md:h-4 md:w-4 text-green-500" />
+          <span>
+            {isMyTurn ? 'Tu turno' : `Turno de ${otherPlayerUsername}`}
+          </span>
         </div>
-      </Card>
 
-      <Card>
-        <div className="text-center">
-          <Target className="h-8 w-8 text-purple-500 mx-auto mb-2" />
-          <p className="text-sm text-gray-600">Objetivo</p>
-          <p className="text-lg font-semibold text-gray-900">4 Fijas</p>
+        <div className="flex items-center space-x-1 md:space-x-2 text-gray-700">
+          <Target className="h-3 w-3 md:h-4 md:w-4 text-purple-500" />
+          <span>4 Fijas</span>
         </div>
-      </Card>
+      </div>
     </div>
   );
 };
