@@ -29,6 +29,7 @@ export interface Room {
   currentTurn: number;
   currentTurnPlayerId: string | null;
   winner?: string;
+  secrets?: [string, string];
   createdAt: string;
 }
 
@@ -53,4 +54,24 @@ export interface JoinRoomResponse {
   code: string;
   state: RoomState;
   players: PlayerInfo[];
+}
+
+export interface MakeGuessDto {
+  guess: string;
+}
+
+export interface RivalInfo {
+  id: string;
+  username: string;
+}
+
+export interface MakeGuessResponse {
+  id: string;
+  guess: string;
+  guessId: string;
+  exactMatches: number;
+  nextTurnPlayer: RivalInfo;
+  currentTurn: number;
+  state: RoomState;
+  winner?: Player;
 }
