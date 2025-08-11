@@ -12,6 +12,7 @@ interface GameContextType {
 
   createRoom: (room: CreateRoomDto) => Promise<Result<CreateRoomResponse>>;
   joinRoom: (room: JoinRoomDto) => Promise<Result<JoinRoomResponse>>;
+  setSecret: (secret: string) => Promise<Result<void>>;
   fetchRoom: (code?: string) => Promise<Result<void>>;
   getRoom: (code: string) => Promise<Result<Room | null>>;
   leaveRoom: () => void;
@@ -27,6 +28,7 @@ const GameContext = createContext<GameContextType>({
   isLoading: false,
   createRoom: async () => ({ data: null, error: new Error('Not implemented') }),
   joinRoom: async () => ({ data: null, error: new Error('Not implemented') }),
+  setSecret: async () => ({ data: null, error: new Error('Not implemented') }),
   fetchRoom: async () => ({ data: null, error: new Error('Not implemented') }),
   getRoom: async () => ({ data: null, error: new Error('Not implemented') }),
   leaveRoom: () => {},
@@ -118,6 +120,19 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     return { data: joinedRoom, error: null };
   };
 
+  const setSecret = async (secret: string): Promise<Result<void>> => {
+    if (!room || !player) {
+      return { data: null, error: new Error('No room or player') };
+    }
+
+    const { error } = await gameAPI.setSecret(room.id, player.id, secret);
+    if (error) {
+      return { data: null, error };
+    }
+
+    return { data: undefined, error: null };
+  };
+
   const fetchRoom = async (code?: string): Promise<Result<void>> => {
     const { data: updatedRoom, error: error2 } = await gameAPI.getRoom(
       code ?? room?.code ?? '',
@@ -155,6 +170,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
         isLoading: gameAPI.isLoading,
         createRoom,
         joinRoom,
+        setSecret,
         fetchRoom,
         getRoom,
         leaveRoom,

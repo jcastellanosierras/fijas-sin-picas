@@ -64,5 +64,13 @@ export const useGameAPI = () => {
     );
   };
 
-  return { createRoom, joinRoom, getRoom, isLoading, error };
+  const setSecret = async (roomId: string, playerId: string, secret: string) => {
+    return await handleAPICall<void>(() =>
+      httpClient.post(`/rooms/${roomId}/secret/${playerId}`, {
+        secret,
+      }),
+    );
+  };
+
+  return { createRoom, joinRoom, getRoom, setSecret, isLoading, error };
 };
