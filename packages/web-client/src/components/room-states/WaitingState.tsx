@@ -1,4 +1,3 @@
-import React from 'react';
 import { LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router';
 
@@ -29,11 +28,7 @@ export const WaitingState: React.FC<WaitingStateProps> = ({ room }) => {
         <div className="mt-8 space-y-4">
           <Instructions room={room} />
 
-          <Button
-            variant="danger"
-            onClick={handleLeaveRoom}
-            className="w-full"
-          >
+          <Button variant="danger" onClick={handleLeaveRoom} className="w-full">
             <LogOut className="h-4 w-4 mr-2" />
             Salir de la Sala
           </Button>

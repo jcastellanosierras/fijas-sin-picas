@@ -1,4 +1,3 @@
-import React from 'react';
 import { Target, Trophy } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,7 +12,8 @@ import { useGame } from '@/context/game';
 import { useGuessesResults } from '@/context/guesses-results';
 
 const guessSchema = z.object({
-  guess: z.string()
+  guess: z
+    .string()
     .length(4, 'La adivinanza debe tener exactamente 4 dígitos')
     .regex(/^\d{4}$/, 'Solo se permiten números'),
 });
@@ -26,10 +26,10 @@ interface GuessFormProps {
   onGuessSubmitted: () => void;
 }
 
-export const GuessForm: React.FC<GuessFormProps> = ({ 
-  isMyTurn, 
-  otherPlayerUsername, 
-  onGuessSubmitted 
+export const GuessForm: React.FC<GuessFormProps> = ({
+  isMyTurn,
+  otherPlayerUsername,
+  onGuessSubmitted,
 }) => {
   const { makeGuess, error: gameError } = useGame();
   const { addGuessResult } = useGuessesResults();
@@ -80,12 +80,15 @@ export const GuessForm: React.FC<GuessFormProps> = ({
           <Target className="h-4 w-4 md:h-5 md:w-5 mr-2 text-blue-500" />
           Hacer Adivinanza
         </h2>
-        
+
         <div className="bg-yellow-50 rounded-lg p-3 md:p-5 text-center">
           <Target className="h-6 w-6 md:h-10 md:w-10 text-yellow-500 mx-auto mb-2 animate-pulse" />
-          <h3 className="text-sm md:text-base font-semibold text-yellow-800 mb-1 md:mb-2">Esperando Turno</h3>
+          <h3 className="text-sm md:text-base font-semibold text-yellow-800 mb-1 md:mb-2">
+            Esperando Turno
+          </h3>
           <p className="text-xs md:text-sm text-yellow-600">
-            Es el turno de {otherPlayerUsername}. Espera tu turno para hacer la siguiente adivinanza.
+            Es el turno de {otherPlayerUsername}. Espera tu turno para hacer la
+            siguiente adivinanza.
           </p>
         </div>
       </Card>

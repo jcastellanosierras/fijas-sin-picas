@@ -1,4 +1,3 @@
-import React from 'react';
 import { Key } from 'lucide-react';
 
 export const Header: React.FC = () => {

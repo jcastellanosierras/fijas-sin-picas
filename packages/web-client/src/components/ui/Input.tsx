@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
@@ -30,9 +28,7 @@ export const Input: React.FC<InputProps> = ({
           ${className}
         `}
       />
-      {error && (
-        <p className="text-sm text-red-600">{error}</p>
-      )}
+      {error && <p className="text-sm text-red-600">{error}</p>}
       {helperText && !error && (
         <p className="text-sm text-gray-500">{helperText}</p>
       )}

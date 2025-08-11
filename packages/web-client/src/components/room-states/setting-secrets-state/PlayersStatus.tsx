@@ -1,4 +1,3 @@
-import React from 'react';
 import { Check, Clock, Users } from 'lucide-react';
 
 import { Card } from '@/components/ui/Card';
@@ -9,7 +8,10 @@ interface PlayersStatusProps {
   playerId: string;
 }
 
-export const PlayersStatus: React.FC<PlayersStatusProps> = ({ room, playerId }) => {
+export const PlayersStatus: React.FC<PlayersStatusProps> = ({
+  room,
+  playerId,
+}) => {
   const currentPlayer = room.players.find((p) => p?.id === playerId);
   const otherPlayer = room.players.find((p) => p?.id !== playerId);
 
@@ -21,16 +23,12 @@ export const PlayersStatus: React.FC<PlayersStatusProps> = ({ room, playerId }) 
       <div className="text-center mb-6">
         <div className="flex items-center justify-center space-x-2 mb-4">
           <Users className="h-5 w-5 text-blue-600" />
-          <span className="text-blue-800 font-medium">
-            Estado de Jugadores
-          </span>
+          <span className="text-blue-800 font-medium">Estado de Jugadores</span>
         </div>
 
         <div className="space-y-3">
           <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
-            <span className="font-medium">
-              {currentPlayer?.username} (Tú)
-            </span>
+            <span className="font-medium">{currentPlayer?.username} (Tú)</span>
             <div className="flex items-center space-x-2">
               {hasSetSecret ? (
                 <>

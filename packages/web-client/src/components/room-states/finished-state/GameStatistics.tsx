@@ -1,4 +1,3 @@
-import React from 'react';
 import { Medal } from 'lucide-react';
 
 import { Card } from '@/components/ui/Card';
@@ -11,39 +10,48 @@ interface GameStatisticsProps {
   otherPlayerUsername: string;
 }
 
-export const GameStatistics: React.FC<GameStatisticsProps> = ({ 
-  currentPlayer, 
-  otherPlayer, 
-  otherPlayerUsername 
+export const GameStatistics: React.FC<GameStatisticsProps> = ({
+  currentPlayer,
+  otherPlayer,
+  otherPlayerUsername,
 }) => {
   const { getGuessResult } = useGuessesResults();
 
-  const formatGuesses = (guesses: Guess[] = [], isCurrentPlayer: boolean = false) => {
+  const formatGuesses = (
+    guesses: Guess[] = [],
+    isCurrentPlayer: boolean = false,
+  ) => {
     return guesses.map((guess) => {
       let resultDisplay = '?';
-      
+
       if (isCurrentPlayer) {
         // Para el jugador actual, usar el contexto de resultados
         const result = getGuessResult(guess.id);
         if (result) {
-          resultDisplay = result.isWinner ? '🎉 ¡GANADOR!' : `${result.exactMatches} fijas`;
+          resultDisplay = result.isWinner
+            ? '🎉 ¡GANADOR!'
+            : `${result.exactMatches} fijas`;
         }
       } else {
         // Para el oponente, calcular basado en el secreto del jugador actual
         if (currentPlayer.secret) {
-          const exactMatches = currentPlayer.secret.split('').filter((digit, index) => {
-            return digit === guess.guess[index];
-          }).length;
-          resultDisplay = exactMatches === 4 ? '🎉 ¡GANADOR!' : `${exactMatches} fijas`;
+          const exactMatches = currentPlayer.secret
+            .split('')
+            .filter((digit, index) => {
+              return digit === guess.guess[index];
+            }).length;
+          resultDisplay =
+            exactMatches === 4 ? '🎉 ¡GANADOR!' : `${exactMatches} fijas`;
         }
       }
 
       return (
-        <div key={guess.id} className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded">
+        <div
+          key={guess.id}
+          className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded"
+        >
           <span className="font-mono text-lg">{guess.guess}</span>
-          <span className="text-sm font-medium">
-            {resultDisplay}
-          </span>
+          <span className="text-sm font-medium">{resultDisplay}</span>
         </div>
       );
     });

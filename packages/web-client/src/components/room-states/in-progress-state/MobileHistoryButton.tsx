@@ -1,4 +1,3 @@
-import React from 'react';
 import { History, Medal } from 'lucide-react';
 
 import { Button } from '@/components/ui/Button';
@@ -8,9 +7,9 @@ interface MobileHistoryButtonProps {
   totalGuesses: number;
 }
 
-export const MobileHistoryButton: React.FC<MobileHistoryButtonProps> = ({ 
-  onClick, 
-  totalGuesses 
+export const MobileHistoryButton: React.FC<MobileHistoryButtonProps> = ({
+  onClick,
+  totalGuesses,
 }) => {
   return (
     <div className="block md:hidden mb-3">
@@ -24,9 +23,11 @@ export const MobileHistoryButton: React.FC<MobileHistoryButtonProps> = ({
           <div className="flex items-center justify-center w-8 h-8 bg-white/20 rounded-full">
             <History className="h-4 w-4 text-white" />
           </div>
-          
-          <span className="text-sm font-semibold tracking-wide">Ver Historial</span>
-          
+
+          <span className="text-sm font-semibold tracking-wide">
+            Ver Historial
+          </span>
+
           <div className="flex items-center space-x-2 bg-white/20 rounded-full px-3 py-1">
             <Medal className="h-3 w-3 text-yellow-300" />
             <span className="text-xs font-bold text-white">{totalGuesses}</span>

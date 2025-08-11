@@ -1,4 +1,3 @@
-import React from 'react';
 import { Home } from 'lucide-react';
 
 import { Button } from '@/components/ui/Button';
@@ -7,9 +6,11 @@ interface ActionButtonsProps {
   onPlayAgain: () => void;
 }
 
-export const ActionButtons: React.FC<ActionButtonsProps> = ({ onPlayAgain }) => {
+export const ActionButtons: React.FC<ActionButtonsProps> = ({
+  onPlayAgain,
+}) => {
   return (
-    <div className="flex flex-col sm:flex-row gap-4 justify-center">      
+    <div className="flex flex-col sm:flex-row gap-4 justify-center">
       <Button
         onClick={onPlayAgain}
         variant="secondary"

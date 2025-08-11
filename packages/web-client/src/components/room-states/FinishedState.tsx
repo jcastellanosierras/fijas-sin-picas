@@ -1,4 +1,3 @@
-import React from 'react';
 import { useNavigate } from 'react-router';
 
 import {
@@ -26,8 +25,10 @@ export const FinishedState: React.FC<FinishedStateProps> = ({ room }) => {
   const otherPlayer = room.players.find((p) => p?.id !== player.id);
   const winner = room.players.find((p) => p?.id === room.winner);
   const isWinner = room.winner === player.id;
-  const mySecret = room.secrets?.[room.players.findIndex((p) => p?.id === player.id)];
-  const otherPlayerSecret = room.secrets?.[room.players.findIndex((p) => p?.id !== player.id)];
+  const mySecret =
+    room.secrets?.[room.players.findIndex((p) => p?.id === player.id)];
+  const otherPlayerSecret =
+    room.secrets?.[room.players.findIndex((p) => p?.id !== player.id)];
 
   const handlePlayAgain = () => {
     leaveRoom();

@@ -1,14 +1,13 @@
-import React from 'react';
 import { LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router';
 
 import { Button } from '@/components/ui/Button';
-import { 
-  Header, 
-  PlayersStatus, 
-  SecretForm, 
-  SecretConfirmed, 
-  TipCard 
+import {
+  Header,
+  PlayersStatus,
+  SecretForm,
+  SecretConfirmed,
+  TipCard,
 } from './setting-secrets-state';
 import { useGame } from '@/context/game';
 import type { Room } from '@/types/rooms';

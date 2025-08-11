@@ -1,4 +1,3 @@
-import React from 'react';
 import { Copy, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -20,13 +19,17 @@ export const RoomInfo: React.FC<RoomInfoProps> = ({ room }) => {
   return (
     <Card>
       <div className="text-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Información de la Sala</h2>
-        
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          Información de la Sala
+        </h2>
+
         <div className="space-y-4">
           <div className="bg-gray-50 rounded-lg p-4">
             <p className="text-sm text-gray-600 mb-1">Código de Sala</p>
             <div className="flex items-center justify-between">
-              <span className="text-2xl font-mono font-bold text-gray-900">{room.code}</span>
+              <span className="text-2xl font-mono font-bold text-gray-900">
+                {room.code}
+              </span>
               <Button
                 size="sm"
                 variant="secondary"

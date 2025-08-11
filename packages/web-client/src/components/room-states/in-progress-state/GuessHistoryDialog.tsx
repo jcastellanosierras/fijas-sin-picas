@@ -1,5 +1,5 @@
-import React from 'react';
 import { Medal, X } from 'lucide-react';
+import { useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { useGuessesResults } from '@/context/guesses-results';
@@ -26,7 +26,7 @@ export const GuessHistoryDialog: React.FC<GuessHistoryDialogProps> = ({
   otherPlayerUsername,
 }) => {
   const { getGuessResult } = useGuessesResults();
-  const [activeTab, setActiveTab] = React.useState<TabType>(TabType.MY_GUESSES);
+  const [activeTab, setActiveTab] = useState<TabType>(TabType.MY_GUESSES);
 
   const getMyGuessResultDisplay = (guess: Guess) => {
     const result = getGuessResult(guess.id);
@@ -38,21 +38,27 @@ export const GuessHistoryDialog: React.FC<GuessHistoryDialogProps> = ({
   const getOpponentGuessResultDisplay = (guess: Guess) => {
     if (!currentPlayer.secret) return '?';
 
-    const exactMatches = currentPlayer.secret.split('').filter((digit, index) => {
-      return digit === guess.guess[index];
-    }).length;
+    const exactMatches = currentPlayer.secret
+      .split('')
+      .filter((digit, index) => {
+        return digit === guess.guess[index];
+      }).length;
 
     return `${exactMatches} fijas`;
   };
 
-  const formatGuesses = (guesses: Guess[], isCurrentPlayer: boolean = false) => {
+  const formatGuesses = (
+    guesses: Guess[],
+    isCurrentPlayer: boolean = false,
+  ) => {
     // Ordenar de forma invertida (último primero)
-    const sortedGuesses = [...guesses].sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    const sortedGuesses = [...guesses].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
 
     return sortedGuesses.map((guess) => {
-      const resultDisplay = isCurrentPlayer 
+      const resultDisplay = isCurrentPlayer
         ? getMyGuessResultDisplay(guess)
         : getOpponentGuessResultDisplay(guess);
 
@@ -62,9 +68,7 @@ export const GuessHistoryDialog: React.FC<GuessHistoryDialogProps> = ({
           className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded"
         >
           <span className="font-mono text-lg">{guess.guess}</span>
-          <span className="text-sm font-medium">
-            {resultDisplay}
-          </span>
+          <span className="text-sm font-medium">{resultDisplay}</span>
         </div>
       );
     });
@@ -111,7 +115,9 @@ export const GuessHistoryDialog: React.FC<GuessHistoryDialogProps> = ({
       <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Historial de Adivinanzas</h2>
+          <h2 className="text-lg font-semibold text-gray-900">
+            Historial de Adivinanzas
+          </h2>
           <Button
             variant="secondary"
             size="sm"
@@ -138,7 +144,7 @@ export const GuessHistoryDialog: React.FC<GuessHistoryDialogProps> = ({
                 <span>Tus Adivinanzas</span>
               </div>
             </button>
-            
+
             <button
               onClick={() => setActiveTab(TabType.OPPONENT_GUESSES)}
               className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
@@ -156,9 +162,7 @@ export const GuessHistoryDialog: React.FC<GuessHistoryDialogProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-4">
-          {renderTabContent()}
-        </div>
+        <div className="p-4">{renderTabContent()}</div>
       </div>
     </div>
   );

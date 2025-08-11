@@ -1,4 +1,3 @@
-import React from 'react';
 import { Clock, Target, User } from 'lucide-react';
 
 import type { Room } from '@/types/rooms';
@@ -9,10 +8,10 @@ interface GameStatusProps {
   otherPlayerUsername: string;
 }
 
-export const GameStatus: React.FC<GameStatusProps> = ({ 
-  room, 
-  isMyTurn, 
-  otherPlayerUsername 
+export const GameStatus: React.FC<GameStatusProps> = ({
+  room,
+  isMyTurn,
+  otherPlayerUsername,
 }) => {
   return (
     <div className="mb-3 md:mb-4">
