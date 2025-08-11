@@ -14,6 +14,7 @@ interface GameContextType {
   joinRoom: (room: JoinRoomDto) => Promise<Result<JoinRoomResponse>>;
   fetchRoom: (code?: string) => Promise<Result<void>>;
   getRoom: (code: string) => Promise<Result<Room | null>>;
+  leaveRoom: () => void;
 
   saveSession: () => void;
   clearSession: () => void;
@@ -28,6 +29,7 @@ const GameContext = createContext<GameContextType>({
   joinRoom: async () => ({ data: null, error: new Error('Not implemented') }),
   fetchRoom: async () => ({ data: null, error: new Error('Not implemented') }),
   getRoom: async () => ({ data: null, error: new Error('Not implemented') }),
+  leaveRoom: () => {},
   saveSession: () => {},
   clearSession: () => {},
 });
@@ -125,6 +127,12 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     return { data: updatedRoom, error: null };
   };
 
+  const leaveRoom = () => {
+    setRoom(null);
+    setPlayer(null);
+    clearSession();
+  };
+
   return (
     <GameContext.Provider
       value={{
@@ -136,6 +144,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
         joinRoom,
         fetchRoom,
         getRoom,
+        leaveRoom,
         saveSession,
         clearSession,
       }}
