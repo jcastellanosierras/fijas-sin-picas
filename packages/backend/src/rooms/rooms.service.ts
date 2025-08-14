@@ -13,7 +13,7 @@ import { MakeGuessResponseDto } from './dto/make-guess-response.dto';
 
 @Injectable()
 export class RoomsService {
-  private readonly rooms: Room[] = [];
+  private rooms: Room[] = [];
 
   private static readonly ERROR_MESSAGES = {
     ROOM_CODE_EXISTS: 'Room with this code already exists',
@@ -41,6 +41,7 @@ export class RoomsService {
 
     const room = this.createNewRoom(createRoomDto);
     this.rooms.push(room);
+    this.updateLatestActivity(room);
     return room;
   }
 
@@ -53,6 +54,7 @@ export class RoomsService {
     this.validateJoinRoomRequest(room, joinRoomDto);
     const newPlayer = this.addPlayerToRoom(room, joinRoomDto.username);
     this.updateRoomStateToSettingSecrets(room);
+    this.updateLatestActivity(room);
 
     return this.buildJoinRoomResponse(room, newPlayer.id);
   }
@@ -72,6 +74,7 @@ export class RoomsService {
     this.validateSecretSetting(room, player);
     this.setPlayerSecret(player, secret);
     this.checkAndStartGame(room);
+    this.updateLatestActivity(room);
   }
 
   async makeGuess(
@@ -106,6 +109,7 @@ export class RoomsService {
       this.handleNonWinningGuess(guessResult, room, player);
     }
 
+    this.updateLatestActivity(room);
     return guessResult;
   }
 
@@ -123,6 +127,27 @@ export class RoomsService {
       );
     }
     return room;
+  }
+
+  async deleteStales(): Promise<{
+    deletedCount: number;
+    remainingCount: number;
+  }> {
+    await Promise.resolve();
+    const initialCount = this.rooms.length;
+
+    this.rooms = this.rooms.filter(
+      (room) =>
+        room.state !== RoomState.FINISHED &&
+        room.latestActivityAt > new Date(Date.now() - 3 * 60 * 1000),
+    );
+
+    const deletedCount = initialCount - this.rooms.length;
+
+    return {
+      deletedCount,
+      remainingCount: this.rooms.length,
+    };
   }
 
   // ===== PRIVATE METHODS =====
@@ -392,5 +417,9 @@ export class RoomsService {
 
   private incrementTurn(room: Room): void {
     room.currentTurn = room.currentTurn + 1;
+  }
+
+  private updateLatestActivity(room: Room): void {
+    room.latestActivityAt = new Date();
   }
 }

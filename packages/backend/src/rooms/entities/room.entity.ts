@@ -31,6 +31,7 @@ export class Room {
   public winner?: Player['id'];
   public secrets?: [string, string];
   public readonly createdAt: Date = new Date();
+  public latestActivityAt: Date = new Date();
 
   constructor(id: string, code: string, password: string) {
     this.id = id;

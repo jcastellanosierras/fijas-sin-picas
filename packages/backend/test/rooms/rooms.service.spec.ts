@@ -1042,4 +1042,284 @@ describe('RoomsService', () => {
       expect(result4.currentTurn).toBe(3);
     });
   });
+
+  describe('Delete stales', () => {
+    beforeEach(async () => {
+      // Limpiar todas las salas antes de cada test
+      const rooms = await roomsService.getRooms();
+      rooms.length = 0;
+
+      // Configurar timers falsos para simular el paso del tiempo
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      // Restaurar timers reales después de cada test
+      jest.useRealTimers();
+    });
+
+    it('should delete rooms with FINISHED state', async () => {
+      // Crear una sala
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      // Unir al segundo jugador
+      const joinRoomDto: JoinRoomServiceDto = {
+        code: room.code,
+        password: room.password,
+        username: 'Player2',
+      };
+      await roomsService.joinRoom(joinRoomDto);
+
+      // Establecer secretos
+      await roomsService.setSecret({
+        roomId: room.id,
+        playerId: room.players[0]!.id,
+        secret: '1234',
+      });
+
+      await roomsService.setSecret({
+        roomId: room.id,
+        playerId: room.players[1]!.id,
+        secret: '5678',
+      });
+
+      // Hacer una adivinanza correcta para terminar el juego
+      const updatedRoom = await roomsService.getRoomByCode(room.code);
+      const turnPlayerId = updatedRoom.currentTurnPlayerId;
+
+      let guess: string;
+      if (turnPlayerId === room.players[0]!.id) {
+        guess = '5678'; // Adivinar el secreto del oponente
+      } else {
+        guess = '1234'; // Adivinar el secreto del oponente
+      }
+
+      await roomsService.makeGuess({
+        roomId: room.id,
+        playerId: turnPlayerId!,
+        guess,
+      });
+
+      // Verificar que el estado es FINISHED
+      const finishedRoom = await roomsService.getRoomByCode(room.code);
+      expect(finishedRoom.state).toBe(RoomState.FINISHED);
+
+      // Ejecutar la función de borrar salas obsoletas
+      await roomsService.deleteStales();
+
+      // Verificar que la sala se ha borrado
+      const remainingRooms = await roomsService.getRooms();
+      expect(remainingRooms).toHaveLength(0);
+    });
+
+    it('should delete room with last activity 3 minutes ago (only created)', async () => {
+      // Crear una sala
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      await roomsService.create(createRoomDto);
+
+      // Simular que han pasado 3 minutos
+      jest.advanceTimersByTime(3 * 60 * 1000);
+
+      // Ejecutar la función de borrar salas obsoletas
+      await roomsService.deleteStales();
+
+      // Verificar que la sala se ha borrado
+      const remainingRooms = await roomsService.getRooms();
+      expect(remainingRooms).toHaveLength(0);
+    });
+
+    it('should delete room with last activity 3 minutes ago (with second player)', async () => {
+      // Crear una sala
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      // Unir al segundo jugador
+      const joinRoomDto: JoinRoomServiceDto = {
+        code: room.code,
+        password: room.password,
+        username: 'Player2',
+      };
+      await roomsService.joinRoom(joinRoomDto);
+
+      // Simular que han pasado 3 minutos desde la última actividad
+      jest.advanceTimersByTime(3 * 60 * 1000);
+
+      // Ejecutar la función de borrar salas obsoletas
+      await roomsService.deleteStales();
+
+      // Verificar que la sala se ha borrado
+      const remainingRooms = await roomsService.getRooms();
+      expect(remainingRooms).toHaveLength(0);
+    });
+
+    it('should delete room with last activity 3 minutes ago (with secrets set)', async () => {
+      // Crear una sala
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      // Unir al segundo jugador
+      const joinRoomDto: JoinRoomServiceDto = {
+        code: room.code,
+        password: room.password,
+        username: 'Player2',
+      };
+      await roomsService.joinRoom(joinRoomDto);
+
+      // Establecer secretos
+      await roomsService.setSecret({
+        roomId: room.id,
+        playerId: room.players[0]!.id,
+        secret: '1234',
+      });
+
+      await roomsService.setSecret({
+        roomId: room.id,
+        playerId: room.players[1]!.id,
+        secret: '5678',
+      });
+
+      // Simular que han pasado 3 minutos desde la última actividad
+      jest.advanceTimersByTime(3 * 60 * 1000);
+
+      // Ejecutar la función de borrar salas obsoletas
+      await roomsService.deleteStales();
+
+      // Verificar que la sala se ha borrado
+      const remainingRooms = await roomsService.getRooms();
+      expect(remainingRooms).toHaveLength(0);
+    });
+
+    it('should delete room with last activity 3 minutes ago (with guess made)', async () => {
+      // Crear una sala
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      // Unir al segundo jugador
+      const joinRoomDto: JoinRoomServiceDto = {
+        code: room.code,
+        password: room.password,
+        username: 'Player2',
+      };
+      await roomsService.joinRoom(joinRoomDto);
+
+      // Establecer secretos
+      await roomsService.setSecret({
+        roomId: room.id,
+        playerId: room.players[0]!.id,
+        secret: '1234',
+      });
+
+      await roomsService.setSecret({
+        roomId: room.id,
+        playerId: room.players[1]!.id,
+        secret: '5678',
+      });
+
+      // Hacer una adivinanza
+      const updatedRoom = await roomsService.getRoomByCode(room.code);
+      const turnPlayerId = updatedRoom.currentTurnPlayerId;
+
+      const guess = '1111'; // Adivinanza incorrecta
+      await roomsService.makeGuess({
+        roomId: room.id,
+        playerId: turnPlayerId!,
+        guess,
+      });
+
+      // Simular que han pasado 3 minutos desde la última actividad
+      jest.advanceTimersByTime(3 * 60 * 1000);
+
+      // Ejecutar la función de borrar salas obsoletas
+      await roomsService.deleteStales();
+
+      // Verificar que la sala se ha borrado
+      const remainingRooms = await roomsService.getRooms();
+      expect(remainingRooms).toHaveLength(0);
+    });
+
+    it('should not delete rooms with recent activity', async () => {
+      // Crear una sala
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      // Simular que la última actividad fue hace 2 minutos (menos de 3)
+      jest.advanceTimersByTime(2 * 60 * 1000);
+
+      // Ejecutar la función de borrar salas obsoletas
+      await roomsService.deleteStales();
+
+      // Verificar que la sala NO se ha borrado
+      const remainingRooms = await roomsService.getRooms();
+      expect(remainingRooms).toHaveLength(1);
+      expect(remainingRooms[0].id).toBe(room.id);
+    });
+
+    it('should not delete rooms in active state with recent activity', async () => {
+      // Crear una sala
+      const createRoomDto: CreateRoomDto = {
+        code: '1234',
+        password: '1234',
+        username: 'Host',
+      };
+      const room = await roomsService.create(createRoomDto);
+
+      // Unir al segundo jugador
+      const joinRoomDto: JoinRoomServiceDto = {
+        code: room.code,
+        password: room.password,
+        username: 'Player2',
+      };
+      await roomsService.joinRoom(joinRoomDto);
+
+      // Establecer secretos para poner la sala en estado IN_PROGRESS
+      await roomsService.setSecret({
+        roomId: room.id,
+        playerId: room.players[0]!.id,
+        secret: '1234',
+      });
+
+      await roomsService.setSecret({
+        roomId: room.id,
+        playerId: room.players[1]!.id,
+        secret: '5678',
+      });
+
+      // Simular que la última actividad fue hace 2 minutos
+      jest.advanceTimersByTime(2 * 60 * 1000);
+
+      // Ejecutar la función de borrar salas obsoletas
+      await roomsService.deleteStales();
+
+      // Verificar que la sala NO se ha borrado
+      const remainingRooms = await roomsService.getRooms();
+      expect(remainingRooms).toHaveLength(1);
+      expect(remainingRooms[0].id).toBe(room.id);
+      expect(remainingRooms[0].state).toBe(RoomState.IN_PROGRESS);
+    });
+  });
 });
